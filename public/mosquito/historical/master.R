@@ -1078,7 +1078,7 @@ legend(x="topleft",
 ############
 # SAVE IMAGE FOR REPORTS
 ############
-save.image("E:/fdoh/public/mosquito/reports/2014-06-26/master.RData")
+save.image("E:/fdoh/public/mosquito/reports/2014-08-01/master.RData")
 
 #SHOW FORECAST
 
@@ -1089,14 +1089,106 @@ cbind(as.character(master$date[which(is.na(master$predicted) == FALSE)]),
       master$upr[which(is.na(master$predicted) == FALSE)])
 
 
-library(car)
-best.boot <- Boot(best, R=1999)
-summary(best.boot)
-confint(best.boot, level=0.8, type="norm")
-hist(best.boot)
-boot.ci(best.boot)
+# library(car)
+# best.boot <- Boot(best, R=1999)
+# summary(best.boot)
+# confint(best.boot, level=0.8, type="norm")
+# hist(best.boot)
+# boot.ci(best.boot)
 ############
 #
 ############
 
+##########KNN
 
+oldPreds <- master[which(master$date >= "2013-01-01" &
+                           is.na(master$totPer) == FALSE),
+                   c("totPer", "rain5.19", "predicted")]
+
+myTrain <- master[which(master$date < "2013-01-01" &
+                          is.na(master$totPer) == FALSE &
+                          is.na(master$rain5.19) == FALSE),
+                  c("totPer", "rain5.19")]
+
+myTrain$totPerFac <- factor(myTrain$totPer)
+myTest <- master[which(master$date >= "2013-01-01" &
+                         is.na(master$totPer) == FALSE),
+                 c("totPer", "rain5.19")]
+myTest$totPerFac <- factor(myTest$totPer)
+
+library("class")
+z <- 
+  knn(train = myTrain,
+      test = myTest,
+      cl = myTrain$totPerFac,
+      k=1,
+      prob=TRUE)
+x <- as.numeric(as.character(z))
+
+par(mfrow=c(1,1))
+plot(myTest$totPer, x)
+
+plot(1:nrow(myTest), myTest$totPer, type="l", col="red") #observed
+lines(1:nrow(myTest), x, col="darkgreen") #predicted by knn
+#lines(1:nrow(myTest), oldPreds$predicted, col="blue") #predicted by current model
+
+#quantify difference
+lm.knn <- lm(myTest$totPer ~ x)
+lm.old <- lm(myTest$totPer ~ oldPreds$predicted)
+
+sum(lm.old$residuals^2) - sum(lm.knn$residuals^2)
+
+barplot(c(sum(lm.old$residuals^2),sum(lm.knn$residuals^2)),
+        names=c("old", "knn"))
+
+
+#what about changing k?
+plot(1:nrow(myTest), myTest$totPer, type="l", col="red") #observed
+
+a <- as.data.frame(1:20)
+colnames(a) <- "k"
+a$r.squared <- NA
+a$sls <- NA
+
+for (i in a$k){
+    z <- 
+    knn(train = myTrain,
+        test = myTest,
+        cl = myTrain$totPerFac,
+        k=i,
+        prob=TRUE)
+  x <- as.numeric(as.character(z))
+  
+  
+  a$r.squared[which(a$k == i)] <-
+    summary(lm(myTest$totPer~ x))$r.squared
+  
+  a$sls[which(a$k == i)] <- 
+    sum(lm(myTest$totPer ~ x)$residuals^2)
+
+  #lines(1:nrow(myTest), x, col="darkgreen") #predicted by knn
+  #Sys.sleep(0.5)
+}
+#k=1 produces best result
+
+a <- a[order(a$sls),]
+a
+
+
+
+
+
+
+
+
+
+
+
+kmeans(myTrain[,1:2])
+
+#Naive Bayes
+library(e1071)
+
+nB_model <- naiveBayes(totPer ~ rain15.29 + mostRecent, data=master)
+summary(nB_model)
+nB_model$apriori
