@@ -1078,7 +1078,7 @@ legend(x="topleft",
 ############
 # SAVE IMAGE FOR REPORTS
 ############
-save.image("E:/fdoh/public/mosquito/reports/2014-08-01/master.RData")
+save.image("E:/fdoh/public/mosquito/reports/2014-08-21/master.RData")
 
 #SHOW FORECAST
 
