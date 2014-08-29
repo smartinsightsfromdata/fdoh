@@ -13,7 +13,7 @@
 ############
 # SET WD TO WHERE I HAVE ALL YEARS OF MOSQUITO DATA
 ############
-setwd("E:/fdoh/public/mosquito/historical")
+setwd("C:/Users/BrewJR/Documents/fdoh/public/mosquito/historical")
 
 ############
 # READ IN ALL DATA INTO LIST
@@ -55,7 +55,7 @@ raw.dat$code[which(grepl("other|Other|OTHER",
 # ############
 # # WRITE A CSV FOR CESAR ESCOBAR (24 June 2014)
 # ############
-# setwd("E:/fdoh/public/mosquito/cesar")
+# setwd("C:/Users/BrewJR/Documents/fdoh/public/mosquito/cesar")
 # write.csv(raw.dat, "raw_data.csv")
 
 ############
@@ -158,7 +158,7 @@ for (i in ts$date){
 #############
 # READ IN DISEASE INFORMATION
 #############
-vec <- read.csv("E:/fdoh/public/mosquito/benVectors.csv", sep=";")
+vec <- read.csv("C:/Users/BrewJR/Documents/fdoh/public/mosquito/benVectors.csv", sep=";")
 colnames(vec) <- c("code", "name", "wnv", "slev", "eeev", "chik", "malaria", "dengue", "yellow")
 
 ############
@@ -240,7 +240,7 @@ ts$day <- as.numeric(format(ts$date, format="%j"))
 ############
 # WRITE A CSV FOR CESAR ESCOBAR (24 June 2014)
 ############
-# setwd("E:/fdoh/public/mosquito/cesar")
+# setwd("C:/Users/BrewJR/Documents/fdoh/public/mosquito/cesar")
 # write.csv(ts, "time_series.csv")
 
 ############
@@ -270,24 +270,24 @@ for (i in 1: length(unique(sort(ts$year)))){
 # }
 # 
 # id$name <- gsub("Cx coronator|[()]", "", id$name)
-# write.csv(id, "E:/workingdirectory/mosquito/id.csv")
+# write.csv(id, "C:/Users/BrewJR/Documents/fdoh/public/mosquito/id.csv")
 
 #############
 # READ IN MOSQUITO ID INFO
 #############
-#id <- read.csv("E:/workingdirectory/mosquito/id.csv")
+#id <- read.csv("C:/Users/BrewJR/Documents/fdoh/public/mosquito/id.csv")
 
 
 ############
 # READ IN TRAP LOCATION DATA
 ############
-loc <- read.csv("E:/fdoh/public/mosquito/traplatlong.csv")
+loc <- read.csv("C:/Users/BrewJR/Documents/fdoh/public/mosquito/traplatlong.csv")
 
 
 ############
 # READ IN RAINFALL / TEMP DATA FROM 2008-13
 ############
-rt <- read.csv("E:/fdoh/public/mosquito/rainAndTemp/rainAndTempUpdated.csv")
+rt <- read.csv("C:/Users/BrewJR/Documents/fdoh/public/mosquito/rainAndTemp/rainAndTempUpdated.csv")
 rt$date <- as.Date(rt$date, format="%Y-%m-%d")
 
 ##############
@@ -355,7 +355,7 @@ for (j in colnames(rt)[grepl("minTemp", colnames(rt))][-1]){
 #########################################
 # WRITE CSV WITH UPDATED RAIN AND TEMP INFO
 #########################################
-write.csv(rt, "E:/fdoh/public/mosquito/rainAndTemp/rainAndTempUpdated.csv")
+write.csv(rt, "C:/Users/BrewJR/Documents/fdoh/public/mosquito/rainAndTemp/rainAndTempUpdated.csv")
 
 ##########################################
 # DEFINE MOST RECENT TRAP DATE
@@ -536,7 +536,7 @@ plot(coefTemp, master$totPer)
 
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#write.csv(pred, "E:/workingdirectory/mosquito/rainAndTemp/pred.csv")
+#write.csv(pred, "C:/Users/BrewJR/Documents/fdoh/public/mosquito/rainAndTemp/pred.csv")
 
 #########################################
 # USING BEST LOG MODEL, MAKE A PREDICTEDLOG COLUMN IN master
@@ -1078,7 +1078,7 @@ legend(x="topleft",
 ############
 # SAVE IMAGE FOR REPORTS
 ############
-save.image("E:/fdoh/public/mosquito/reports/2014-08-21/master.RData")
+save.image("C:/Users/BrewJR/Documents/fdoh/public/mosquito/reports/2014-08-21/master.RData")
 
 #SHOW FORECAST
 
@@ -1086,7 +1086,8 @@ cbind(as.character(master$date[which(is.na(master$predicted) == FALSE)]),
       master$totPer[which(is.na(master$predicted) == FALSE)],
       master$predicted[which(is.na(master$predicted) == FALSE)], 
       master$lwr[which(is.na(master$predicted) == FALSE)], 
-      master$upr[which(is.na(master$predicted) == FALSE)])
+      master$upr[which(is.na(master$predicted) == FALSE)],
+      master$rain5.11[which(is.na(master$predicted) == FALSE)])
 
 
 # library(car)
