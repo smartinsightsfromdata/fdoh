@@ -515,6 +515,35 @@ head(predRain)
 # best <- lm(totPer ~ rain17.36 + 
 #              I(rain17.36^(2)) + 0, data = master)
 
+
+#############
+# RANDOM FOREST MODEL (September 5, 2014)
+#############
+# library(randomForest)
+# 
+# my_rf <- randomForest(totPer ~ ., na.action = na.omit, data = master )
+
+###########
+# RANDOM FOREST
+###########
+
+train <- master[which(master$date < "2014-01-01" ),grepl("rain|Temp|totPer|mostRecent", colnames(master))]
+test <- master[which(master$date >= "2014-01-01"),grepl("rain|Temp|totPer|mostRecent", colnames(master))]
+
+library(rpart)
+modform <- totPer ~ .
+fit <- rpart(modform, data = train, 
+             control=rpart.control(minsplit=10, cp=0.00001))
+
+### PREDICT
+test$x <- predict(fit, newdata = test)
+plot(test$x, test$totPer)
+
+master$x <- predict(fit, newdata = master)
+plot(master$x, master$totPer)
+
+lines(0:2000, 0:2000)
+
 #experimental
 best <- lm(totPer ~ 
              I(rain15.29^2) +
@@ -1078,7 +1107,7 @@ legend(x="topleft",
 ############
 # SAVE IMAGE FOR REPORTS
 ############
-save.image("C:/Users/BrewJR/Documents/fdoh/public/mosquito/reports/2014-08-21/master.RData")
+save.image("C:/Users/BrewJR/Documents/fdoh/public/mosquito/reports/2014-09-05/master.RData")
 
 #SHOW FORECAST
 
