@@ -523,12 +523,35 @@ head(predRain)
 # 
 # my_rf <- randomForest(totPer ~ ., na.action = na.omit, data = master )
 
+############## 
+# MODELING
+##############
+train <- master[which(master$date < "2014-01-01" ),
+                grepl("rain|Temp|totPer", colnames(master)) &
+                  grepl("5|totPer", colnames(master)) &
+                  grepl("1|totPer", colnames(master)) &
+                  !grepl("mostRecent", colnames(master))]
+test <- master[which(master$date >= "2014-01-01"),
+               grepl("rain|Temp|totPer", colnames(master)) &
+                 grepl("5|totPer", colnames(master)) &
+                 grepl("1|totPer", colnames(master)) &
+                 !grepl("mostRecent", colnames(master))]
+
+
+###########
+# GAM
+###########
+library(mgcv)
+modformchar <- paste0("totPer ~", paste(colnames(train[which(!grepl("totPer", colnames(train)))]), collapse = "+"))
+modform <- as.formula(modformchar)
+
+fit <- gam(modform, data = train)
+
+x <- predict(fit, newdata = test)
 ###########
 # RANDOM FOREST
 ###########
 
-train <- master[which(master$date < "2014-01-01" ),grepl("rain|Temp|totPer|mostRecent", colnames(master))]
-test <- master[which(master$date >= "2014-01-01"),grepl("rain|Temp|totPer|mostRecent", colnames(master))]
 
 library(rpart)
 modform <- totPer ~ .
