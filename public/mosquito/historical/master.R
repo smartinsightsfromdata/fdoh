@@ -523,18 +523,23 @@ head(predRain)
 # 
 # my_rf <- randomForest(totPer ~ ., na.action = na.omit, data = master )
 
+##############
+# FIX MASTER INF STUFF
+##############
+master$minTemp5.10[which(!is.finite(master$minTemp5.10))] <- NA
+
 ############## 
 # MODELING
 ##############
 train <- master[which(master$date < "2014-01-01" ),
                 grepl("rain|Temp|totPer", colnames(master)) &
-                  grepl("5|totPer", colnames(master)) &
-                  grepl("1|totPer", colnames(master)) &
+                 # grepl("5|totPer", colnames(master)) &
+                #  grepl("1|totPer", colnames(master)) &
                   !grepl("mostRecent", colnames(master))]
 test <- master[which(master$date >= "2014-01-01"),
                grepl("rain|Temp|totPer", colnames(master)) &
-                 grepl("5|totPer", colnames(master)) &
-                 grepl("1|totPer", colnames(master)) &
+                # grepl("5|totPer", colnames(master)) &
+                # grepl("1|totPer", colnames(master)) &
                  !grepl("mostRecent", colnames(master))]
 
 
@@ -547,9 +552,19 @@ modformchar <- paste0("totPer ~",
                       " + 0")
 modform <- as.formula(modformchar)
 
-fit <- gam(modform, data = train)
+modform2 <- totPer ~ s(rain5.19) + s(rain20.40) #s(minTemp5.10) +s(rain15.29)  
+
+fit <- gam(modform2, data = train, direction = "backward")
 
 x <- predict(fit, newdata = test)
+
+plot(x, test$totPer)
+vis.gam(fit, view=c("rain5.19", "rain20.40"), type="response",
+        plot.type = "contour", color="topo",
+        n.grid=500, too.far=1)
+
+master$gam <- predict(fit, newdata = master)
+plot(master$gam, master$totPer)
 ###########
 # RANDOM FOREST
 ###########
