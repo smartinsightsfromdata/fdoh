@@ -542,7 +542,9 @@ test <- master[which(master$date >= "2014-01-01"),
 # GAM
 ###########
 library(mgcv)
-modformchar <- paste0("totPer ~", paste(colnames(train[which(!grepl("totPer", colnames(train)))]), collapse = "+"))
+modformchar <- paste0("totPer ~", 
+                      paste(colnames(train[which(!grepl("totPer", colnames(train)))]), collapse = "+"),
+                      " + 0")
 modform <- as.formula(modformchar)
 
 fit <- gam(modform, data = train)
@@ -551,12 +553,11 @@ x <- predict(fit, newdata = test)
 ###########
 # RANDOM FOREST
 ###########
-
-
 library(rpart)
-modform <- totPer ~ .
-fit <- rpart(modform, data = train, 
-             control=rpart.control(minsplit=10, cp=0.00001))
+library(randomForest)
+fit <- rpart(modform, data = train, control=rpart.control(minsplit=10, cp=0.00001))
+
+fit <- randomForest(modform, data = train)
 
 ### PREDICT
 test$x <- predict(fit, newdata = test)
