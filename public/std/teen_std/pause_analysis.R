@@ -2,38 +2,83 @@ library(maptools)
 library(rgdal)
 library(RColorBrewer)
 library(classInt)
+library(dplyr)
 
 #################
 ## Setwd
 if ( Sys.info()["sysname"] == "Linux" ){
-  setwd("/home/joebrew/Documents/")
+  setwd("/home/joebrew/")
 } else {
-  setwd("C:/Users/BrewJR/Documents/")
+  setwd("C:/Users/BrewJR/")
 }
 
 #################
 ## Read in STD data (not stored in this directory)
-std <- read.csv("C:/Users/BrewJR/Desktop/std_private/alachua_2009-2014.csv")
+std <- read.csv("Desktop/std_private/alachua_2009-2014.csv")
+
+# Convert to local dataframe
+std <- tbl_df(std)
 
 # Format dates
-std$date <- as.Date(std$date_added, format = "%Y-%m-%d")
+std <-
+  std %>%
+  mutate(date = as.Date(date_added, 
+                        format = "%Y-%m-%d"))
 
 # Subset to keep only relevant columns
-std <- std[,c("zip", "disease", "disease_name", "age_group", "sex", "race", "ethnicity",
-              "pregnant", "msm", "date")]
+std <- std %>%
+  select(zip, disease, disease_name, age_group, sex, race, ethnicity, pregnant, msm, date)
 
-#################
+# Create a month / year column
+std <- std %>%
+  mutate(month = format(date, "%m"),
+         year = format(date, "%Y"))
+
+# # number of cases by month
+# ts <- 
+#   std %>% 
+#   group_by(month, year) %>%
+#   summarise(cases = n()) %>%
+#   arrange(year, month)
+
+# number of cases by month
+ts <- 
+  std %>% 
+  group_by(month, year, race) %>%
+  summarise(cases = n()) %>%
+  arrange( year, month,race)
+
+w <-
+  ts %>%
+  filter(race == "White")
+barplot(w$cases)
+
+b <-
+  ts %>%
+  filter(race == "Black/African American")
+barplot(b$cases, add = TRUE, col = "red")
+
+
 ## Read in Alachua zip code shapefiles
-setwd("~/fdoh/public/gis/alachuazipcodes")
+setwd("~/Documents/fdoh/public/gis/alachuazipcodes")
 zip <- readOGR(".", layer="ACDPS_zipcode")
-setwd("~/fdoh/public/gis/zip")
-zip2 <- readOGR(".", layer = "zipbnd_2012") # this has 2010 pop
-setwd("~/fdoh/public/fl_zcta")
-fl <- readOGR(".", layer="tl_2010_12_zcta510")
+setwd("~/Documents/fdoh/public/gis/zip")
+fl <- readOGR(".", layer = "zipbnd_2012") # this has 2010 pop
 
-setwd("~/fdoh/public/census")
+## Read in population data for florida zip codes
+setwd("~/Documents/fdoh/public/census")
 pop <- read.csv("florida_details.csv", skip = 1)
 names(pop) <- gsub("[.]", "", names(pop))
+pop <- tbl_df(pop)
+
+# Keep only the age variables relevant to this analysis
+pop <- pop %>% 
+  select(matches(paste(15:24, collapse = "|")))
+
+# Reformat all columns in pop as Numeric
+pop <- pop %>% 
+  filter(AreaName == "Alachua County")
+
 
 # Cases by zip code
 zip$cases <- NA
