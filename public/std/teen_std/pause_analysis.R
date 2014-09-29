@@ -12,6 +12,8 @@ if ( Sys.info()["sysname"] == "Linux" ){
   setwd("C:/Users/BrewJR/")
 }
 
+mywd <- getwd()
+
 #################
 ## Read in STD data (not stored in this directory)
 std <- read.csv("Desktop/std_private/alachua_2009-2014.csv")
@@ -34,39 +36,54 @@ std <- std %>%
   mutate(month = format(date, "%m"),
          year = format(date, "%Y"))
 
-# # number of cases by month
-# ts <- 
-#   std %>% 
-#   group_by(month, year) %>%
-#   summarise(cases = n()) %>%
-#   arrange(year, month)
-
-# number of cases by month
+# number of cases by month by race
 ts <- 
   std %>% 
   group_by(month, year, race) %>%
   summarise(cases = n()) %>%
   arrange( year, month,race)
 
-w <-
-  ts %>%
-  filter(race == "White")
-barplot(w$cases)
+# Define function for overlapping plots
+BarFun <- function(df = ts){
+  # asian
+  a <-
+    ts %>%
+    filter(race == "Asian")
+  # white
+  w <-
+    ts %>%
+    filter(race == "White")
+  # black
+  b <-
+    ts %>%
+    filter(race == "Black/African American")
+  
+  mymax <- max(df$cases, na.rm = T)
+  
+  barplot(a$cases, ylim=c(0,mymax))
+  Sys.sleep(3)
+  barplot(w$cases, add = T, col = adjustcolor("blue", alpha.f=0.5))
+  Sys.sleep(3)
+  barplot(b$cases, add = T, col = adjustcolor("red", alpha.f=0.5))
+}
 
-b <-
-  ts %>%
-  filter(race == "Black/African American")
-barplot(b$cases, add = TRUE, col = "red")
+BarFun(ts)
+legend(x= "topright",
+       fill = c("grey",
+               adjustcolor("blue", alpha.f = 0.5),
+               adjustcolor("red", alpha.f = 0.5)),
+       legend = c("Asian", "White", "Black"))
 
 
 ## Read in Alachua zip code shapefiles
-setwd("~/Documents/fdoh/public/gis/alachuazipcodes")
-zip <- readOGR(".", layer="ACDPS_zipcode")
-setwd("~/Documents/fdoh/public/gis/zip")
-fl <- readOGR(".", layer = "zipbnd_2012") # this has 2010 pop
+setwd("Documents/fdoh/public/gis/")
+zip <- readOGR("alachuazipcodes", layer="ACDPS_zipcode")
+fl <- readOGR("zip", layer = "zipbnd_2012") # this has 2010 pop
+
+plot(fl[which(fl$PO_NAME %in% zip$PO_NAME),])
 
 ## Read in population data for florida zip codes
-setwd("~/Documents/fdoh/public/census")
+setwd(paste0(mywd,"/Documents/fdoh/public/census"))
 pop <- read.csv("florida_details.csv", skip = 1)
 names(pop) <- gsub("[.]", "", names(pop))
 pop <- tbl_df(pop)
