@@ -3,10 +3,73 @@ library(RColorBrewer)
 library(car)
 
 # Set wd
-setwd("C:/Users/BrewJR/Documents/tobacco")
+setwd("C:/Users/BrewJR/Documents/fdoh/public/tobacco")
 
 # Read in data
-comb <- read.csv("comb1.csv")
+comb <- read.csv("comb1.csv", stringsAsFactors = FALSE)
+
+# Recode all 77, 88, 99
+for (i in 1:ncol(comb)){
+  var <-  comb[,i]
+  var[which(var %in% c(77,88,99))] <- NA
+  var[which(var %in% c("77", "88", "99"))] <- NA
+  comb[,i] <- var
+}
+
+# Selectively recode
+yesnos <- c(7,8, 12:31, 33:35)
+for (i in yesnos){
+  comb[,i] <- Recode(comb[,i],
+                     "1 = 'Yes';
+                      2 = 'No'")
+}
+
+# Size category
+comb[,5] <- Recode(comb[,5],
+                   "1 = 'Small'; 
+                   2 = 'Large'")
+
+# Type of insurance coverage
+comb[,9] <- Recode(comb[,9],
+                   "1 = 'Self'; 
+                   2 = 'Fully';
+                   0 = NA;
+                  ' ' = NA; 
+                  '' = NA; 
+                  '1- ' = NA;  
+                   '1-' = 'Self';
+                   '2l' = 'Fully'")
+
+# Employer sector
+comb[,11] <- Recode(comb[,11],
+                    "1 = 'Government';
+                    2 = 'Healthcare';
+                    3 = 'Business';
+                    4 = 'County School District';
+                    5 = 'City Municipality';
+                    6 = 'County Municipality'")
+
+# Extent of TFG policy coverage
+comb[,32] <- Recode(comb[,32], "
+                    1 = '100% SFG';
+                    2 = '100% TFG';
+                    3 = 'SFIW';
+                    4 = 'SFIWO'")
+
+# Insurance carrier
+comb[,10] <- Recode(comb[,10], 
+                   "'1' = 'UHC';
+                    '2' = 'Aetna';
+                    '3' = 'Avmed';
+                    '4' = 'BCBS';
+                    '5' = 'Capital';
+                    '6' = 'Florida Blue';
+                    '7' = 'Cigna';
+                    '8' = 'Health First';
+                    '9' = 'Humana';
+                    '10' = 'Self-insured';
+                    '11' = 'Other';
+                    '12' = 'Combination'")
 
 # Read in names of questions
 comb_names <- read.csv("comb1.csv", header = FALSE)
@@ -30,107 +93,263 @@ simpasym <- function(n, p, z=1.96, cc=TRUE){
 ###################
 # WRITE FUNCTION FOR PLOTTING BARS
 ###################
-BarFun <- function(var, recode_var = NULL){
+BarFun <- function(var, by_var = NULL, recode_var = NULL, ref = NULL,
+                   cex.names = 1, las = 1, legend = FALSE, rain = FALSE){
   
+  var <- comb[,"Insurance.Carrier"]
+  by_var = comb[,5]
+  ref <- NULL
+  recode_var <- NULL
+  cex.names = 1
+  las = 1
   # Ensure it's treated as a character
   var <- as.character(var)
   
-  # Replace 77,88,99 with "Unknown"
-  var[which(var %in% c(77,88,99))] <- "Unknown"
-  
-  # If recoding vector is supplied, use it
-  if(is.null(recode_var)){
-    var <- Recode(var,
-                  "'1' = 'Yes';
-                '2' = 'No'")
-  } else {
-    var <- Recode(var,
-                  recode_var)    
-  }
-  
   # Make var a factor and relevel so "unknown" comes first
   var <- factor(var)
-  var <- relevel(var, ref = "Unknown")
+  if(!is.null(by_var)){by_var <- factor(by_var)}
+  if(is.null(ref)){
+    var <- var
+  } else {
+    var <- relevel(var, ref = ref)
+  }
     
   # Make a table
-  var_table <- table(var)
-  var_names <- names(var_table)
-  var_vals <- as.numeric(var_table)
-  var_prop <- prop.table(var_table) * 100
+  if(is.null(by_var)){
+    var_table <- table(var)
+    var_names <- names(var_table)
+    var_vals <- as.numeric(var_table)
+    var_prop <- prop.table(var_table) * 100
+    
+    # Calculate confidence intervals
+    ci <- simpasym(n=sum(var_table), 
+                   p=var_prop / 100, 
+                   z=1.96, cc=TRUE) 
+    lb <- ci$lb * sum(var_table)
+    ub <- ci$ub * sum(var_table)
+    
+  } else {
+    var_table <- table(var, by_var)
+    var_names <- levels(var)
+    var_vals <- matrix(var_table, ncol = length(levels(by_var)))
+    var_prop <- prop.table(var_table, 1) * 100
+    
+    # Calculate confidence intervals
+    ci <- simpasym(n= rep(apply(var_table, 1, sum),2), #sum(var_table), 
+                   p=var_prop / 100, 
+                   z=1.96, cc=TRUE) 
+    lb <- ci$lb * rep(apply(var_table, 1, sum),2) #var_table#sum(var_table)
+    ub <- ci$ub * rep(apply(var_table, 1, sum),2)#var_table#sum(var_table)
+    
+  }
+
   
   # Assing positions based on relative value compared to others
   var_pos <- ifelse(var_prop < 0.5 * max(var_prop),
                     3, 1)
   
-  # Calculate confidence intervals
-  ci <- simpasym(n=sum(var_table), 
-                 p=var_prop / 100, 
-                 z=1.96, cc=TRUE) 
-  lb <- ci$lb * sum(var_table)
-  ub <- ci$ub * sum(var_table)
+
   
   # Create color vector (first is always red if there are unknowns)
-  if( var_table["Unknown"] > 0 ){
-    my_colors <- c("Red", colorRampPalette(c("darkblue", "darkgreen"))(length(levels(var)) -1))
-  } else {
+#   if( var_table["Unknown"] > 0 ){
+#     my_colors <- c("Red", colorRampPalette(c("darkblue", "darkgreen"))(length(levels(var)) -1))
+#   } else {
     my_colors <- colorRampPalette(c("darkblue", "darkgreen"))(length(levels(var)))
-  }
+#   }
+
+
+if(rain){
+  my_colors <- rainbow(length(levels(var)))
+}
   my_colors <- adjustcolor(my_colors, alpha.f = 0.6)
-  
+
+
   # Make barplot
-  bp <- barplot(var_table,
-                ylim = c(0, max(ub)*1.2),
-                col = my_colors,
-                border = "darkgrey")
-  
-  # Add point estimate text
-#   text(x = bp[,1],
-#        y = var_vals,
-#        labels = paste0(round(var_prop, digits = 1), "%"),
-#        pos = var_pos)
-  
-# Add error bars
-  errbar(x=bp[,1],
-         y=var_table,
-         yplus=ub,
-         yminus=lb,
-         add=TRUE,
-         type="n",
-         errbar.col=adjustcolor("darkred", alpha.f=0.6),
-         lwd=2)
-  
-  # Add text of point estimate with c.i.'s
-  text(x=bp[,1], 
-       y= ifelse(var_pos == 1, 
-                 var_table - (.15*max(var_table)),
-                 var_table + (.15*max(var_table))),
-       labels=paste0(" ", round(var_prop, digits=1),
-                     "%",
-                     "\n(",
-                     round(ci$lb*100, digits=1),
-                     "%",
-                     "-",
-                     round(ci$ub*100, digits=1),
-                     "%",
-                     ")"
-       ),
-       cex=2/length(var_table),
-       col=adjustcolor("black", alpha.f=0.7))
-  
+  if(is.null(by_var)){
+    bp <- barplot(var_table,
+                  ylim = c(0, max(ub)*1.2),
+                  col = my_colors,
+                  border = "darkgrey",
+                  ylab = "Number of employers",
+                  cex.names = cex.names,
+                  las = las, 
+                  beside = TRUE)
+    
+    # Add point estimate text
+    #   text(x = bp[,1],
+    #        y = var_vals,
+    #        labels = paste0(round(var_prop, digits = 1), "%"),
+    #        pos = var_pos)
+    
+    # Add error bars
+    errbar(x=bp[,1],
+           y=var_table,
+           yplus=ub,
+           yminus=lb,
+           add=TRUE,
+           type="n",
+           errbar.col=adjustcolor("darkred", alpha.f=0.6),
+           lwd=2)
+    
+    # Add text of point estimate with c.i.'s
+    text(x=bp[,1], 
+         y= ifelse(var_pos == 1, 
+                   var_table - (.1*max(var_table)),
+                   var_table + (.1*max(var_table))),
+         labels=paste0(" ", round(var_prop, digits=1),
+                       "%",
+                       "\n(",
+                       round(ci$lb*100, digits=1),
+                       "%",
+                       "-",
+                       round(ci$ub*100, digits=1),
+                       "%",
+                       ")"
+         ),
+         cex=2/length(var_table),
+         col=adjustcolor("black", alpha.f=0.7))
+    
+    abline(h = 0)
+  } else{
+    
+    bp <- barplot(var_table,
+                  ylim = c(0, max(ub)*1.2),
+                  col = my_colors,
+                  border = "darkgrey",
+                  ylab = "Number of employers",
+                  cex.names = cex.names,
+                  las = las,
+                  beside = TRUE,
+                  legend = legend)
+    
+    # Add error bars
+    errbar(x=bp,
+           y=var_table,
+           yplus=ub,
+           yminus=lb,
+           add=TRUE,
+           type="n",
+           errbar.col=adjustcolor("darkred", alpha.f=0.6),
+           lwd=2)
+    
+    # Add text of point estimate with c.i.'s
+    text(x=bp, 
+         y= ifelse(var_pos == 1, 
+                   var_table - (.1*max(var_table)),
+                   var_table + (.1*max(var_table))),
+         labels=paste0(" ", round(var_prop, digits=1),
+                       "%",
+                       "\n(",
+                       round(ci$lb*100, digits=1),
+                       "%",
+                       "-",
+                       round(ci$ub*100, digits=1),
+                       "%",
+                       ")"
+         ),
+         cex=2/length(var_table),
+         col=adjustcolor("black", alpha.f=0.7))
+    
+    abline(h = 0)
+    
+  }
+
+
+ 
 }
 
-par(mfrow=c(1,1))
-BarFun(comb[,7])
-title(main = comb_names[,7])
 
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+#1 . Size of employer and does employer provide health insurance
+BarFun(comb[,5], by_var = comb[,8])
 par(mfrow=c(1,2))
-BarFun(comb[which(comb[,5] == 1),8])
-title(main = "< 50 employees", cex.main = 0.8)
-BarFun(comb[which(comb[,5] == 2),8])
-title(main = "50 + employees", cex.main = 0.8)
+BarFun(comb[which(comb[,5] == "Small"),8])
+title(main = "Small", cex.main = 0.8)
+BarFun(comb[which(comb[,5] == "Large"),8])
+title(main = "Large", cex.main = 0.8)
 title(main = "Does your employeer provide health insurance?",
       outer = TRUE,
       line = -1)
+par(mfrow = c(1,1))
+
+# 2. Insurance carrier x size of employer
+BarFun(comb[,"Insurance.Carrier"], by_var = comb[,8], rain = TRUE)
+
+par(mfrow=c(1,2))
+
+BarFun(var = comb[which(comb[,5] == "Small"),"Insurance.Carrier"],
+       cex.names = 0.6,
+       las = 3)
+title(main = "Small", cex.main = 0.8)
+
+BarFun(var = comb[which(comb[,5] == "Large"),"Insurance.Carrier"],
+       cex.names = 0.6,
+       las = 3)
+title(main = "Large", cex.main = 0.8)
+title(main = "Insurers by business size",
+      outer = TRUE,
+      line = -1)
+
+#3 . Size of employeer by OTC only
+par(mfrow=c(1,2))
+BarFun(comb[which(comb[,5] == 1),16])
+title(main = "Small", cex.main = 0.8)
+BarFun(comb[which(comb[,5] == 2),16])
+title(main = "Large", cex.main = 0.8)
+title(main = "Covers OTC only",
+      outer = TRUE,
+      line = -1)
+
+#4. Size of employer x Rx only
+par(mfrow=c(1,2))
+BarFun(comb[which(comb[,5] == 1),21])
+title(main = "Small", cex.main = 0.8)
+BarFun(comb[which(comb[,5] == 2),21])
+title(main = "Large", cex.main = 0.8)
+title(main = "Covers Rx only",
+      outer = TRUE,
+      line = -1)
+
+# 5. Size of employer and combination OTC and RX
+par(mfrow=c(1,2))
+BarFun(comb[which(comb[,5] == 1),22])
+title(main = "Small", cex.main = 0.8)
+BarFun(comb[which(comb[,5] == 2),22])
+title(main = "Large", cex.main = 0.8)
+title(main = "Covers OTC and Rx",
+      outer = TRUE,
+      line = -1)
+
+# 6. Size of employer and gold criteria met
+par(mfrow=c(1,2))
+BarFun(comb[which(comb[,5] == 1),35])
+title(main = "Small", cex.main = 0.8)
+BarFun(comb[which(comb[,5] == 2),35])
+title(main = "Large", cex.main = 0.8)
+title(main = "Gold criteria met",
+      outer = TRUE,
+      line = -1)
+
+# 7. 
+
+#8. 
+
+# 9. Insurance carrier by OTC nly
+par(mfrow=c(1,2))
+BarFun(comb[which(comb[,10] == 1),16])
+title(main = "Small", cex.main = 0.8)
+BarFun(comb[which(comb[,10] == 2),16])
+title(main = "Large", cex.main = 0.8)
+title(main = "Covers OTC only",
+      outer = TRUE,
+      line = -1)
+
+# 10. 
+
+for (i in 7:57){
+  BarFun(comb[,i])
+}
 
 ###############
 # GEOCODING
@@ -149,7 +368,7 @@ comb <- cbind(comb, locations)
 #                 " ", "county",
 #                 ", ",
 #                 "Florida")
-
+# 
 # library(RCurl)
 # library(RJSONIO)
 # library(plyr)
@@ -179,8 +398,8 @@ comb <- cbind(comb, locations)
 # 
 # locations <- ldply(places, function(x) geoCode(x))
 # names(locations) <- c("lat","lon","location_type", "forAddress")
-# 
-# #write.csv(locations, "locations.csv")
+
+#write.csv(locations, "locations.csv")
 
 ###############
 # MAP FUNCTION
