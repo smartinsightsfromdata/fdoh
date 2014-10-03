@@ -6,8 +6,9 @@ library(car)
 setwd("C:/Users/BrewJR/Documents/fdoh/public/tobacco")
 
 # Read in data
-comb <- read.csv("comb1.csv", stringsAsFactors = FALSE)
-
+#comb <- read.csv("comb1.csv", stringsAsFactors = FALSE)
+comb <- read.csv("combined_corrected.csv", stringsAsFactors = FALSE)
+comb[,1] <- NULL
 # Recode all 77, 88, 99
 for (i in 1:ncol(comb)){
   var <-  comb[,i]
@@ -71,6 +72,36 @@ comb[,10] <- Recode(comb[,10],
                     '11' = 'Other';
                     '12' = 'Combination'")
 
+# FIX THE SECTOR ISSUE
+# library(gdata)
+# school_districts <- read.xls("tobacco.xlsm", sheet = 4)
+# city <- read.xls("tobacco.xlsm", sheet = 5)
+# county <- read.xls("tobacco.xlsm", sheet = 6)
+# 
+# # school districts
+# comb[,11][which(comb[,3] %in% as.character(school_districts[,3]))] <-
+#   "County School District"
+# 
+# # city municipalities
+# comb[,11][which(comb[,3] %in% as.character(city[,3]))] <-
+#   "City Municipality" 
+# 
+# # county municipalities
+# comb[,11][which(comb[,3] %in% as.character(county[,3]))] <-
+#   "County Municipality" 
+# 
+# # visualize
+# bp <- barplot(table(comb[,11]), cex.names = 0.55, las = 1, border = "darkgrey")
+# abline(h=seq(0,1000,100),
+#        col = adjustcolor("darkgreen", alpha.f = 0.2))
+# text(x = bp[,1],
+#      y = 150,
+#      pos = 1,
+#      labels = paste0(100*round(prop.table(table(comb[,11])), digits = 4), "%"),
+#      cex = 0.5)
+# 
+# #write.csv(comb, "combined_corrected.csv")
+
 # Read in names of questions
 comb_names <- read.csv("comb1.csv", header = FALSE)
 comb_names <- comb_names[1,]
@@ -94,14 +125,21 @@ simpasym <- function(n, p, z=1.96, cc=TRUE){
 # WRITE FUNCTION FOR PLOTTING BARS
 ###################
 BarFun <- function(var, by_var = NULL, recode_var = NULL, ref = NULL,
-                   cex.names = 1, las = 1, legend = FALSE, rain = FALSE){
+                   cex.names = 1, las = 1, legend = FALSE, rain = FALSE,
+                   border = "black", percent = TRUE,
+                   legend.cex = 0.8, legend.title = NULL,
+                   err.cex = 0.8){
   
-  var <- comb[,"Insurance.Carrier"]
-  by_var = comb[,5]
-  ref <- NULL
-  recode_var <- NULL
-  cex.names = 1
-  las = 1
+#   var <- comb[,"Insurance.Carrier"]
+#   by_var = comb[,5]
+#   ref <- NULL
+#   recode_var <- NULL
+#   cex.names = 1
+#   las = 1
+#   percent = TRUE
+#   border = "black"
+#   rain = TRUE
+#   legend = TRUE
   # Ensure it's treated as a character
   var <- as.character(var)
   
@@ -129,10 +167,11 @@ BarFun <- function(var, by_var = NULL, recode_var = NULL, ref = NULL,
     ub <- ci$ub * sum(var_table)
     
   } else {
-    var_table <- table(var, by_var)
+    #var_table <- table(var, by_var)
+    var_table <- table(by_var, var)
     var_names <- levels(var)
     var_vals <- matrix(var_table, ncol = length(levels(by_var)))
-    var_prop <- prop.table(var_table, 1) * 100
+    var_prop <- prop.table(var_table, 2) * 100
     
     # Calculate confidence intervals
     ci <- simpasym(n= rep(apply(var_table, 1, sum),2), #sum(var_table), 
@@ -154,115 +193,276 @@ BarFun <- function(var, by_var = NULL, recode_var = NULL, ref = NULL,
 #   if( var_table["Unknown"] > 0 ){
 #     my_colors <- c("Red", colorRampPalette(c("darkblue", "darkgreen"))(length(levels(var)) -1))
 #   } else {
-    my_colors <- colorRampPalette(c("darkblue", "darkgreen"))(length(levels(var)))
 #   }
 
-
-if(rain){
-  my_colors <- rainbow(length(levels(var)))
+if(is.null(by_var)){
+  my_colors <- colorRampPalette(c("darkblue", "darkgreen"))(length(levels(var)))
+  
+  if(rain){
+    my_colors <- rainbow(length(levels(var)))
+  }
+  
+}else{
+  my_colors <- colorRampPalette(c("darkblue", "darkgreen"))(length(levels(by_var)))
+  if(rain){
+    my_colors <- rainbow(length(levels(by_var)))
+  }
 }
+
   my_colors <- adjustcolor(my_colors, alpha.f = 0.6)
 
 
   # Make barplot
   if(is.null(by_var)){
-    bp <- barplot(var_table,
-                  ylim = c(0, max(ub)*1.2),
-                  col = my_colors,
-                  border = "darkgrey",
-                  ylab = "Number of employers",
-                  cex.names = cex.names,
-                  las = las, 
-                  beside = TRUE)
     
-    # Add point estimate text
-    #   text(x = bp[,1],
-    #        y = var_vals,
-    #        labels = paste0(round(var_prop, digits = 1), "%"),
-    #        pos = var_pos)
-    
-    # Add error bars
-    errbar(x=bp[,1],
-           y=var_table,
-           yplus=ub,
-           yminus=lb,
-           add=TRUE,
-           type="n",
-           errbar.col=adjustcolor("darkred", alpha.f=0.6),
-           lwd=2)
-    
-    # Add text of point estimate with c.i.'s
-    text(x=bp[,1], 
-         y= ifelse(var_pos == 1, 
-                   var_table - (.1*max(var_table)),
-                   var_table + (.1*max(var_table))),
-         labels=paste0(" ", round(var_prop, digits=1),
-                       "%",
-                       "\n(",
-                       round(ci$lb*100, digits=1),
-                       "%",
-                       "-",
-                       round(ci$ub*100, digits=1),
-                       "%",
-                       ")"
-         ),
-         cex=2/length(var_table),
-         col=adjustcolor("black", alpha.f=0.7))
-    
-    abline(h = 0)
+    if(percent){
+      
+      bp <- barplot(var_prop,
+                    ylim = c(0, max(ci$ub)*120),
+                    col = my_colors,
+                    border = border,
+                    ylab = "Percent",
+                    cex.names = cex.names,
+                    las = las, 
+                    beside = TRUE)
+      if(legend){
+        legend(x = "topright",
+               fill = my_colors,
+               bty = "n",
+               ncol = round(length(my_colors) / 2),
+               legend = levels(var),
+               cex = legend.cex,
+               title = legend.title)
+      }
+      
+      # Add point estimate text
+      #   text(x = bp[,1],
+      #        y = var_vals,
+      #        labels = paste0(round(var_prop, digits = 1), "%"),
+      #        pos = var_pos)
+      
+      # Add error bars
+      errbar(x=bp[,1],
+             y=var_prop,
+             yplus=ci$ub*100,
+             yminus=ci$lb*100,
+             add=TRUE,
+             type="n",
+             errbar.col=adjustcolor("darkred", alpha.f=0.6),
+             lwd=2)
+      
+      # Add text of point estimate with c.i.'s
+      text(x=bp[,1], 
+           y= ifelse(var_pos == 1, 
+                     var_prop - (.1*max(var_prop)),
+                     var_prop + (.1*max(var_prop))),
+           labels=paste0(" ", round(var_prop, digits=1),
+                         "%",
+                         "\n(",
+                         round(ci$lb*100, digits=1),
+                         "%",
+                         "-",
+                         round(ci$ub*100, digits=1),
+                         "%",
+                         ")"
+           ),
+           cex=err.cex,
+           col=adjustcolor("black", alpha.f=0.7))
+      
+      abline(h = 0)
+      
+    }else {
+      
+      bp <- barplot(var_table,
+                    ylim = c(0, max(ub)*1.2),
+                    col = my_colors,
+                    border = border,
+                    ylab = "Percent",
+                    cex.names = cex.names,
+                    las = las, 
+                    beside = TRUE)
+      
+      if(legend){
+        legend(x = "topright",
+               fill = my_colors,
+               bty = "n",
+               ncol = round(length(my_colors) / 2),
+               legend = levels(var),
+               cex = legend.cex,
+               title = legend.title)
+      }
+      # Add error bars
+      errbar(x=bp[,1],
+             y=var_table,
+             yplus=ub,
+             yminus=lb,
+             add=TRUE,
+             type="n",
+             errbar.col=adjustcolor("darkred", alpha.f=0.6),
+             lwd=2)
+      
+      # Add text of point estimate with c.i.'s
+      text(x=bp[,1], 
+           y= ifelse(var_pos == 1, 
+                     var_table - (.1*max(var_table)),
+                     var_table + (.1*max(var_table))),
+           labels=paste0(" ", round(var_prop, digits=1),
+                         "%",
+                         "\n(",
+                         round(ci$lb*100, digits=1),
+                         "%",
+                         "-",
+                         round(ci$ub*100, digits=1),
+                         "%",
+                         ")"
+           ),
+           cex=err.cex,
+           col=adjustcolor("black", alpha.f=0.7))
+      
+      abline(h = 0)
+      
+    }
+   
+    # begin by_var
+  
   } else{
     
-    bp <- barplot(var_table,
-                  ylim = c(0, max(ub)*1.2),
-                  col = my_colors,
-                  border = "darkgrey",
-                  ylab = "Number of employers",
-                  cex.names = cex.names,
-                  las = las,
-                  beside = TRUE,
-                  legend = legend)
-    
-    # Add error bars
-    errbar(x=bp,
-           y=var_table,
-           yplus=ub,
-           yminus=lb,
-           add=TRUE,
-           type="n",
-           errbar.col=adjustcolor("darkred", alpha.f=0.6),
-           lwd=2)
-    
-    # Add text of point estimate with c.i.'s
-    text(x=bp, 
-         y= ifelse(var_pos == 1, 
-                   var_table - (.1*max(var_table)),
-                   var_table + (.1*max(var_table))),
-         labels=paste0(" ", round(var_prop, digits=1),
-                       "%",
-                       "\n(",
-                       round(ci$lb*100, digits=1),
-                       "%",
-                       "-",
-                       round(ci$ub*100, digits=1),
-                       "%",
-                       ")"
-         ),
-         cex=2/length(var_table),
-         col=adjustcolor("black", alpha.f=0.7))
-    
-    abline(h = 0)
-    
-  }
-
-
- 
+    if(percent){
+      bp <- barplot(var_prop,
+                    ylim = c(0, max(ci$ub)*120),
+                    col = my_colors,
+                    border = border,
+                    ylab = "Percent",
+                    cex.names = cex.names,
+                    las = las,
+                    beside = TRUE)
+      
+      if(legend){
+        legend(x = "topright",
+               fill = my_colors,
+               bty = "n",
+               ncol = round(length(my_colors) / 2),
+               legend = levels(by_var),
+               cex = legend.cex,
+               title = legend.title)
+      }
+      
+      # Add error bars
+      errbar(x=bp,
+             y=var_prop,
+             yplus=ci$ub*100,
+             yminus=ci$lb*100,
+             add=TRUE,
+             type="n",
+             errbar.col=adjustcolor("darkred", alpha.f=0.6),
+             lwd=2)
+      
+      # Add text of point estimate with c.i.'s
+      text(x=bp, 
+           y= ifelse(var_pos == 1, 
+                     var_prop - (.1*max(var_prop)),
+                     var_prop + (.1*max(var_prop))),
+           labels=paste0(" ", round(var_prop, digits=1),
+                         "%",
+                         "\n(",
+                         round(ci$lb*100, digits=1),
+                         "%",
+                         "-",
+                         round(ci$ub*100, digits=1),
+                         "%",
+                         ")"
+           ),
+           cex=err.cex,
+           col=adjustcolor("black", alpha.f=0.7))
+      
+      abline(h = 0)
+      
+    } else{
+      
+      bp <- barplot(var_table,
+                    ylim = c(0, max(ub)*1.2),
+                    col = my_colors,
+                    border = border,
+                    ylab = "Percent",
+                    cex.names = cex.names,
+                    las = las,
+                    beside = TRUE)
+      
+      if(legend){
+        legend(x = "topright",
+               fill = my_colors,
+               bty = "n",
+               ncol = round(length(my_colors) / 2),
+               legend = levels(by_var),
+               cex = legend.cex,
+               title = legend.title)
+      }
+      
+      # Add error bars
+      errbar(x=bp,
+             y=var_table,
+             yplus=ub,
+             yminus=lb,
+             add=TRUE,
+             type="n",
+             errbar.col=adjustcolor("darkred", alpha.f=0.6),
+             lwd=2)
+      
+      # Add text of point estimate with c.i.'s
+      text(x=bp, 
+           y= ifelse(var_pos == 1, 
+                     var_table - (.1*max(var_table)),
+                     var_table + (.1*max(var_table))),
+           labels=paste0(" ", round(var_prop, digits=1),
+                         "%",
+                         "\n(",
+                         round(ci$lb*100, digits=1),
+                         "%",
+                         "-",
+                         round(ci$ub*100, digits=1),
+                         "%",
+                         ")"
+           ),
+           cex=err.cex,
+           col=adjustcolor("black", alpha.f=0.7))
+      
+      abline(h = 0)
+    }
+  } 
 }
 
+BarFun(comb[,"Insurance.Carrier"],
+       comb[,5],
+       ref = NULL,
+       recode_var = NULL,
+       cex.names = 0.6,
+       las = 3,
+       percent = TRUE,
+       border = "black",
+       #rain = TRUE,
+       legend = TRUE,
+       err.cex = 0.4,
+       legend.title = "Employer size")
+
+#   var <- comb[,"Insurance.Carrier"]
+#   by_var = comb[,5]
+#   ref <- NULL
+#   recode_var <- NULL
+#   cex.names = 1
+#   las = 1
+#   percent = TRUE
+#   border = "black"
+#   rain = TRUE
+#   legend = TRUE
+
+# Best example:
+barplot(100*prop.table(table(by_var, var),2), las = 3, cex.names = 0.7, beside = T,
+        legend = T, col = c("blue", "darkgreen"))
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 #1 . Size of employer and does employer provide health insurance
-BarFun(comb[,5], by_var = comb[,8])
+BarFun(comb[,5], by_var = comb[,8], legend = TRUE, rain = TRUE)
 par(mfrow=c(1,2))
 BarFun(comb[which(comb[,5] == "Small"),8])
 title(main = "Small", cex.main = 0.8)
@@ -274,7 +474,7 @@ title(main = "Does your employeer provide health insurance?",
 par(mfrow = c(1,1))
 
 # 2. Insurance carrier x size of employer
-BarFun(comb[,"Insurance.Carrier"], by_var = comb[,8], rain = TRUE)
+BarFun(comb[,"Insurance.Carrier"], by_var = comb[,8])
 
 par(mfrow=c(1,2))
 
