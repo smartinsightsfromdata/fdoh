@@ -132,11 +132,108 @@ title(main = "Does your employeer provide health insurance?",
       outer = TRUE,
       line = -1)
 
+###############
+# GEOCODING
+###############
 
-# Question names
-q_names <- c("Number of employees at work place",
-             "Size Category",
-             
-             )
-# of tobacco users at work place	Does employer hire tobacco users?             --yes or no	Does employer provide health insurance?  yes or no?  If no, proceed to column Y.	Please select type of insurance coverage:  self-insured or fully-insured	Insurance Carrier	Please select one employer sector: government, healthcare, or business (including private or non-profit)	Any tobacco cessation coverage?	Patch NRT OTC Covered?                     -- Yes or No	Gum NRT OTC Covered?                      -- Yes or No	Lozenge NRT OTC Covered?                    -- yes or no	Covered OTC only?	Inhaler NRT RX Covered?                    -- yes or no	Nose Spray RX Covered?                    -- yes or no	Bupropion RX  Covered?                   -- yes or no	Varenicline RX Covered?                    -- yes or no	Covered RX only?	Covered both OTC and RX?	Individual Counseling Covered?                   -- yes or no	Phone Counseling Covered?                    -- yes or no	Group Counseling Covered?                      -- yes or no	Web Based Counseling Covered?    -- yes or no	Covered some types of counseling?	Covered all types of counseling?	Covers at least 2 Quit Attempts provided per year                  -- yes or no	Are a combination of both cessation medication and counseling covered?	Any barriers to coverage, such as counseling before medications or    co-pays?             --yes or no	Extent of TFG Policy Coverage -- 100% SFG, 100% TFG, SFIW, or SFIWO     	E-cigs included in policy as restricted yes or no	Silver FTCA Medication Criteria Met	Gold FTCA Medication Criteria Met	Baseline SOC      BENEFIT	Baseline SOC           TFG Policy	Baseline SOC            Promote Encourage Provide	BaselineWas a referral to a local AHEC  made for this employer this quarter?           Yes or No	Q-1        FY(13-14) SOC      BENEFIT	Q-1        FY(13-14) SOC      TFG Policy	Q-1        FY(13-14) SOC         Promote Encourage Provide	Q-1        Was a referral to a local AHEC  made for this employer this quarter?           Yes or No	Q-2        FY(13-14) SOC      BENEFIT	Q-2        FY(13-14) SOC      TFG Policy	Q-2        FY(13-14) SOC         Promote Encourage Provide	Q-2      Was a referral to a local AHEC  made for this employer this quarter?           Yes or No	Q-3        FY(13-14) SOC      BENEFIT	Q-3        FY(13-14) SOC      TFG Policy	Q-3        FY(13-14) SOC         Promote Encourage Provide	Q-3      Was a referral to a local AHEC  made for this employer this quarter?           Yes or No	Q-4        FY(13-14) SOC      BENEFIT	Q-4        FY(13-14) SOC      TFG Policy	Q-4        FY(13-14) SOC         Promote Encourage Provide	Q-4      Was a referral to a local AHEC  made for this employer this quarter?           Yes or No	Briefly describe any progress made with this employer from baseline interview.                  (For example, has an employer strengthened a campus policy, instituted a no-hire policy,   increased benefit coverage, or made a decision to do so?  Have you sent this employer emails or information newsletters to maintain regular communication?  Have you spoken by phone or face-fo-face?)	Briefly describe any plans, opportunities or potential strategies to engage this employer in the coming quarter to move them from one stage of change to another.
+# Having already geocoded, just read in locations
+locations <- read.csv("locations.csv")
 
+# merge with comb
+comb <- cbind(comb, locations)
+
+# THE BELOW ONLY NEEDS TO BE RUN ONCE:
+# places <- paste0(comb$Name.of.Employer,
+#                 ", ", 
+#                 comb$County.Reporting,
+#                 " ", "county",
+#                 ", ",
+#                 "Florida")
+
+# library(RCurl)
+# library(RJSONIO)
+# library(plyr)
+# 
+# url <- function(address, return.call = "json", sensor = "false") {
+#   root <- "http://maps.google.com/maps/api/geocode/"
+#   u <- paste(root, return.call, "?address=", address, "&sensor=", sensor, sep = "")
+#   return(URLencode(u))
+# }
+# 
+# geoCode <- function(address,verbose=FALSE) {
+#   if(verbose) cat(address,"\n")
+#   u <- url(address)
+#   doc <- getURL(u)
+#   x <- fromJSON(doc,simplify = FALSE)
+#   if(x$status=="OK") {
+#     lat <- x$results[[1]]$geometry$location$lat
+#     lng <- x$results[[1]]$geometry$location$lng
+#     location_type <- x$results[[1]]$geometry$location_type
+#     formatted_address <- x$results[[1]]$formatted_address
+#     return(c(lat, lng, location_type, formatted_address))
+#   } else {
+#     return(c(NA,NA,NA, NA))
+#   }
+# }
+# 
+# 
+# locations <- ldply(places, function(x) geoCode(x))
+# names(locations) <- c("lat","lon","location_type", "forAddress")
+# 
+# #write.csv(locations, "locations.csv")
+
+###############
+# MAP FUNCTION
+###############
+par(mfrow = c(1,1))
+par(mar=c(1,1,1,1))
+library(maps)
+mymap <- map("county", "fl",
+             fill = TRUE,
+             col = "grey",
+             border = "darkgrey")
+
+size_col <- ifelse(comb[,5] == 1, "blue", 
+                   ifelse(comb[,5] == 2, "red",
+                          "darkgreen"))
+size_pch <- ifelse(comb[,5] == 1, 16,
+                   ifelse(comb[,5] == 2, 15,
+                          17))
+
+# points(comb$lon, comb$lat, col = adjustcolor("black", alpha.f = 0.6),
+#        cex = 0.5)
+points(comb$lon, comb$lat, 
+       col = adjustcolor(size_col, alpha.f = 0.2),
+       pch = size_pch,
+       cex = 0.5)
+
+legend(x = "left",
+       pch = c(16,15,17),
+       col = adjustcolor(c("blue", "red", "darkgreen"), alpha.f = 0.4),
+       legend = c("Small (<50)", "Large (50+)", "Unknown"),
+       bty = "n",
+       cex = 0.75,
+       title = "Business size")
+
+
+
+
+##########
+# MAP FUNCTION
+##########
+TractFun <- function(var, color){
+  plotvar <- var
+  nclr <- 5
+  plotclr <- brewer.pal(nclr, color)
+  class <- classIntervals(plotvar, nclr, style = "quantile", dataPrecision=0) #use "equal" instead
+  #class <- classIntervals(0:100, nclr, style="equal")
+  colcode <- findColours(class, plotclr)
+  legcode <- paste0(gsub(",", " - ", gsub("[[]|[]]|[)]", "", names(attr(colcode, "table")))), "%")
+  plot(tract2, border=NA, col=colcode)
+  legend("left", # position
+         legend = legcode, #names(attr(colcode, "table")), 
+         fill = attr(colcode, "palette"), 
+         cex = 0.6, 
+         border=NA,
+         bty = "n")
+}
