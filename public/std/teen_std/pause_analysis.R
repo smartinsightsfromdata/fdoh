@@ -36,26 +36,66 @@ std <- std %>%
   mutate(month = format(date, "%m"),
          year = as.numeric(format(date, "%Y")))
 
+# Randomly assign NA's to some zip codes based on what George said about JobCorps
+FixZip <- function(year, disease_code, number, df = std){
+  std <- df  
+  std$zip[which(std$zip == 32609 &
+                  std$disease == disease_code &
+                  std$year == year)][sample(1:nrow(std[which(std$zip == 32609 &
+                                                                 std$disease == disease_code &
+                                                               std$year == year),]), number)] <- NA
+  return(std)
+}
+
+
+# Disease code 200
+std <- FixZip(year = 2009, disease_code = 200, number = 50)
+std <- FixZip(year = 2010, disease_code = 200, number = 18)
+std <- FixZip(year = 2011, disease_code = 200, number = 16)
+std <- FixZip(year = 2012, disease_code = 200, number = 37)
+std <- FixZip(year = 2013, disease_code = 200, number = 15)
+std <- FixZip(year = 2014, disease_code = 200, number = 17)
+
+# Disease code 300
+std <- FixZip(year = 2009, disease_code = 300, number = 4)
+std <- FixZip(year = 2010, disease_code = 300, number = 2)
+std <- FixZip(year = 2011, disease_code = 300, number = 3)
+std <- FixZip(year = 2012, disease_code = 300, number = 6)
+std <- FixZip(year = 2013, disease_code = 300, number = 6)
+std <- FixZip(year = 2014, disease_code = 300, number = 1)
+
+# Disease code 720
+std <- FixZip(year = 2010, disease_code = 720, number = 1)
+
+# Disease code 730
+std <- FixZip(year = 2010, disease_code = 730, number = 1)
+std <- FixZip(year = 2014, disease_code = 730, number = 1)
+
+
+
+
+
 # number of cases by month by race
 ts <- 
   std %>% 
-  group_by(month, year, race) %>%
+  group_by(month, year, race, age_group) %>%
   summarise(cases = n()) %>%
-  arrange( year, month,race)
+  arrange(year, month,race)
 
 # Define function for overlapping plots
 BarFun <- function(df = ts){
+  df <- df[which(df$age_group == "15 - 19"),] 
   # asian
   a <-
-    ts %>%
+    df %>%
     filter(race == "Asian")
   # white
   w <-
-    ts %>%
+    df %>%
     filter(race == "White")
   # black
   b <-
-    ts %>%
+    df %>%
     filter(race == "Black/African American")
   
   mymax <- max(df$cases, na.rm = T)
@@ -74,6 +114,169 @@ legend(x= "topright",
                adjustcolor("red", alpha.f = 0.5)),
        legend = c("Asian", "White", "Black"))
 
+# Define linefun to do the same
+LineFun <- function(df = ts){
+
+  df <- df[which(df$age_group == "15 - 19"),]
+  
+  # asian
+  a <-
+    df %>%
+    filter(race == "Asian")
+  a <- a[-nrow(a),]
+  
+  # white
+  w <-
+    df %>%
+    filter(race == "White")
+  w <- w[-nrow(w),]
+  
+  # black
+  b <-
+    df %>%
+    filter(race == "Black/African American")
+  b <- b[-nrow(b),]
+  
+  mymax <- max(df$cases, na.rm = T)
+  
+  plot(1:nrow(b),b$cases,
+       xaxt = "n",
+       xlab = "Date",
+       ylab = "Cases",
+       ylim = c(0,mymax),
+       type = "n")
+  axis(side = 1, at = 1:nrow(b),
+       labels = paste(b$month,"-", b$year),
+       cex.axis = 0.4, las = 3)
+  lines(1:nrow(w), w$cases, col = adjustcolor("darkgreen", alpha.f =0.6))
+  lines(1:nrow(b), b$cases, col = adjustcolor("darkblue", alpha.f =0.6))
+  points(1:nrow(w), w$cases, col = adjustcolor("darkgreen", alpha.f =0.6))
+  points(1:nrow(b), b$cases, col = adjustcolor("darkblue", alpha.f =0.6))
+  
+  abline(v=which(b$month == "01"),
+         col = adjustcolor("black", alpha.f = 0.3))
+  text(x = which(b$month == "01"),
+       y = mymax,
+       pos = 4,
+       labels = b$year[which(b$month == "01")])
+}
+LineFun(ts)
+legend(x = 60,
+       y = 55,
+       #bty = "n",
+       pch = 1,
+       lty = 1,
+       col = adjustcolor(c("darkblue", "darkgreen"), alpha.f = 0.6),
+       legend = c("Black", "White"))
+
+
+####### RATES BY YEAR
+ts <- std %>%
+  group_by(year, race, age_group) %>%
+  summarise(cases = n()) %>%
+  arrange(year,race)
+
+# BASELINE POP from Fl Charts: Add in number of 15-19 year old girls by race
+#n white 15-19 year olds
+ts$n_white_teens <- 7500*2
+ts$n_white_teens[which(ts$year %in% 2009)] <- 7648*2
+ts$n_white_teens[which(ts$year %in% 2010)] <- 8518*2
+ts$n_white_teens[which(ts$year %in% 2011)] <- 8454*2
+ts$n_white_teens[which(ts$year %in% 2012)] <- 8522 *2
+ts$n_white_teens[which(ts$year %in% 2013)] <- 8446*2
+ts$n_white_teens[which(ts$year %in% 2014)] <- 8446*2
+
+#n black 15-19 year olds
+ts$n_black_teens <- 4000*2
+ts$n_black_teens[which(ts$year %in% 2009)] <- 4604*2
+ts$n_black_teens[which(ts$year %in% 2010)] <- 4138*2
+ts$n_black_teens[which(ts$year %in% 2011)] <- 4075*2
+ts$n_black_teens[which(ts$year %in% 2012)] <- 4162 *2
+ts$n_black_teens[which(ts$year %in% 2013)] <- 4132*2
+ts$n_black_teens[which(ts$year %in% 2014)] <- 4132*2
+
+#n 15-19 year olds
+ts$n_teens <- 11500*2
+ts$n_teens[which(ts$year %in% 2009)] <- 11712*2
+ts$n_teens[which(ts$year %in% 2010)] <- 12656*2
+ts$n_teens[which(ts$year %in% 2011)] <- 12529*2
+ts$n_teens[which(ts$year %in% 2012)] <- 12684 *2
+ts$n_teens[which(ts$year %in% 2013)] <- 12578*2
+ts$n_teens[which(ts$year %in% 2014)] <- 12578*2
+
+
+# Define linefunprop for rates
+LineFunProp <- function(df = ts){
+  
+  df <- df[which(df$age_group == "15 - 19"),]
+
+  # white
+  w <- df[which(df$race == "White"),]
+  w <- w[-nrow(w),]
+  w$cases <- w$cases / w$n_white_teens * 100000
+  
+  # black
+  b <- df[which(df$race == "Black/African American"),]
+  b <- b[-nrow(b),]
+  b$cases <- b$cases / b$n_black_teens * 100000
+    
+  mymax <- max(b$cases, na.rm = T)
+  
+  plot(1:nrow(b),b$cases,
+       xaxt = "n",
+       xlab = "Date",
+       ylab = "Yearly incidence per 100,000",
+       ylim = c(0,mymax),
+       type = "n")
+  axis(side = 1, at = 1:nrow(b),
+       labels = paste(b$year),
+       cex.axis = 1)
+  lines(1:nrow(w), w$cases, col = adjustcolor("darkgreen", alpha.f =0.6))
+  lines(1:nrow(b), b$cases, col = adjustcolor("darkblue", alpha.f =0.6))
+  points(1:nrow(w), w$cases, col = adjustcolor("darkgreen", alpha.f =0.6))
+  points(1:nrow(b), b$cases, col = adjustcolor("darkblue", alpha.f =0.6))
+  
+
+}
+LineFunProp(ts)
+legend(x = "topright",
+       #bty = "n",
+       pch = 1,
+       lty = 1,
+       col = adjustcolor(c("darkblue", "darkgreen"), alpha.f = 0.6),
+       legend = c("Black", "White"))
+
+# ALL RACES
+####### RATES BY YEAR
+ts <- std %>%
+  group_by(year, age_group) %>%
+  summarise(cases = n()) %>%
+  arrange(year, age_group)
+ts <- ts[which(ts$age_group == "15 - 19"),]
+ts$n_teens <- 11500*2
+ts$n_teens[which(ts$year %in% 2009)] <- 11712*2
+ts$n_teens[which(ts$year %in% 2010)] <- 12656*2
+ts$n_teens[which(ts$year %in% 2011)] <- 12529*2
+ts$n_teens[which(ts$year %in% 2012)] <- 12684 *2
+ts$n_teens[which(ts$year %in% 2013)] <- 12578*2
+ts$n_teens[which(ts$year %in% 2014)] <- 12578*2
+ts$per <- ts$cases / ts$n_teens * 100000
+
+library(RColorBrewer)
+
+# CASES PER YEAR
+my_cols <- colorRampPalette(c("blue", "red"))(max(ts$cases))
+barplot(ts$cases,
+        names.arg = ts$year,
+        col = my_cols[round(ts$cases)],
+        ylab = "Cases")
+
+# INCIDENCE PER YEAR
+my_cols <- colorRampPalette(c("blue", "red"))(max(ts$per))
+barplot(ts$per,
+        names.arg = ts$year,
+        col = my_cols[round(ts$per)],
+        ylab = "Rate per 100,000")
 
 ## Read in Alachua zip code shapefiles
 setwd("Documents/fdoh/public/gis/")
@@ -307,3 +510,233 @@ MapFun(disease = "std",
        min_age = 15, 
        max_age = 24, 
        color = "Blues")
+
+
+
+
+
+#######################
+# SATURDAY PLOTS
+
+# And add columns for age groups (1519)
+for (i in zip$zip){
+  for (k in c("Chlamydia", "Syphilis", "Gonorrhea")){
+    zip@data[which(zip$zip == i),paste0(k, "1519")] <- 
+     NA   
+  }
+}
+
+for (i in zip$zip){
+    for (k in c("Chlamydia", "Syphilis", "Gonorrhea")){
+      zip@data[which(zip$zip == i),paste0(k, "1519")] <- 
+        (nrow(std[which(std$zip == i &
+                          std$disease_name == k),]) /
+           (zip$POP2010[which(zip$zip == i)] *
+           p1519)/ 5.75  ) * 100000     
+    }
+  }
+
+
+# Write function to plot choropleth map
+MapFun <- function(var = "Chlamydia1519", 
+                   color = "Blues",
+                   breaks = 8){
+  plotvar <- var
+  nclr <- breaks
+  plotclr <- brewer.pal(nclr, color)
+  class <- classIntervals(plotvar, nclr, style = "quantile", dataPrecision=0) #use "equal" instead
+  #class <- classIntervals(0:100, nclr, style="equal")
+  colcode <- findColours(class, plotclr)
+  legcode <- paste0(gsub(",", " - ", gsub("[[]|[]]|[)]", "", names(attr(colcode, "table")))))
+  plot(zip, border="darkgrey", col=colcode)
+  legend("left", # position
+         legend = legcode, #names(attr(colcode, "table")), 
+         fill = attr(colcode, "palette"), 
+         cex = 0.8, 
+         border=NA,
+         bty = "n",
+         title = "Per 100,000")
+}
+
+MapFun(zip$Syphilis1519, color = "Greens", breaks = 4)
+title(main = "Syphilis incidence (15-19 year-olds)")
+MapFun(zip$Chlamydia1519, color = "Reds")
+title(main = "Chlamydia incidence (15-19 year-olds)")
+MapFun(zip$Gonorrhea1519, color = "Purples")
+title(main = "Gonorrhea incidence (15-19 year-olds)")
+
+
+
+
+
+
+
+
+
+
+
+
+
+#######################
+# LBW AND TEEN BIRTH STUFF
+#######################
+
+########## 
+# STD ANALYSIS USING VITAL STATS DATA (CANNOT BE RUN WITHOUT PRIVATE ACCESS)
+###########
+library(dplyr)
+
+# Alachua births only
+al <- ab %>%
+  filter(MOTHER_RES_COUNTY == "ALACHUA",
+         EVENT_YEAR > 1990,
+         EVENT_YEAR < 2014)
+
+# Get number of teen births each year
+ts <- al %>%
+  group_by(EVENT_YEAR) %>%
+  filter(MOTHER_AGE < 20) %>%
+  summarise(teen_births = n()) 
+
+# Number of black teen births each year
+x <- 
+  al %>%
+  group_by(EVENT_YEAR) %>%
+  filter(MOTHER_AGE < 20,
+         MOTHER_RACE_BLACK == "Y") %>%
+  summarise(count = n()) %>%
+  select(count)
+ts$black_teens <- x$count
+
+# Number of white teen births each year
+x <- 
+  al %>%
+  group_by(EVENT_YEAR) %>%
+  filter(MOTHER_AGE < 20,
+         MOTHER_RACE_WHITE == "Y") %>%
+  summarise(count = n()) %>%
+  select(count)
+ts$white_teens <- x$count
+
+# BASELINE POP from Fl Charts: Add in number of 15-19 year old girls by race
+ts$n_white_teens <- 7500
+ts$n_white_teens[which(ts$EVENT_YEAR %in% 2008:2013)] <- c(7793, 7648, 8518, 8454, 8522, 8446)
+
+ts$n_black_teens <- 4000
+ts$n_black_teens[which(ts$EVENT_YEAR %in% 2008:2013)] <- c(4018, 4064, 4138, 4075, 4162, 4132)
+
+ts$n_teens <- 11500
+ts$n_teens[which(ts$EVENT_YEAR %in% 2008:2013)] <- c(11811, 11712, 12656, 12529, 12684, 12578)
+
+##### PLOT TIME
+library(RColorBrewer)
+
+# PLOT TOTAL NUMBER OF TEEN BIRTHS BY YEAR
+my_cols <- colorRampPalette(c("blue", "red"))(max(ts$teen_births))
+bp <- barplot(ts$teen_births, col = my_cols[ts$teen_births], names.arg = ts$EVENT_YEAR)
+
+# BIRTH RATE
+my_cols <- colorRampPalette(c("blue", "red"))(max(round(ts$teen_births / ts$n_teens * 1000)))
+bp <- barplot(ts$teen_births / ts$n_teens * 1000,
+              names.arg = ts$EVENT_YEAR,
+              col = my_cols[round(ts$teen_births / ts$n_teens * 1000)])
+
+
+
+# barplot(ts$white_teens, ylim = c(0,200))
+# barplot(ts$black_teens, col = adjustcolor("darkred", alpha.f = 0.2), add = T)
+
+# NUMBER OF TEEN BIRTHS PER YEAR BY RACE
+z <- matrix(cbind(ts$black_teens, ts$white_teens), ncol = 2)
+barplot(t(z), beside = T, 
+        col = adjustcolor(c("darkred", "darkgrey"), alpha.f = 0.6),
+        names.arg = ts$EVENT_YEAR)
+legend(x = "topright",
+       fill =  adjustcolor(c("darkred", "darkgrey"), alpha.f = 0.6),
+       legend = c("Black", "White"))
+
+# TEEN BIRTH RATE PER YEAR BY RACE
+z <- matrix(cbind(ts$black_teens / ts$n_black_teens * 1000, ts$white_teens / ts$n_white_teens * 1000), ncol = 2)
+barplot(t(z), beside = T, 
+        col = adjustcolor(c("darkred", "darkgrey"), alpha.f = 0.6),
+        names.arg = ts$EVENT_YEAR)
+legend(x = "topright",
+       fill =  adjustcolor(c("darkred", "darkgrey"), alpha.f = 0.6),
+       legend = c("Black", "White"))
+
+# LAST TEN YEARS TOTAL
+last10 <- ts[which(ts$EVENT_YEAR > 2003),]
+black <- sum(last10$black_teens) / sum(last10$n_black_teens) * 1000
+white <- sum(last10$white_teens) / sum(last10$n_white_teens) * 1000
+bp <- barplot(c(black, white),
+              col = adjustcolor(c("darkred", "darkgrey"), alpha.f = 0.6),
+              names.arg = c("Black", "White"))
+legend(x = "topright",
+       fill =  adjustcolor(c("darkred", "darkgrey"), alpha.f = 0.6),
+       legend = c("Black", "White"))
+text(x = bp[,1],
+     y = c(black, white),
+     pos = 1,
+     labels = round(c(black, white), digits = 2))
+
+z <- matrix(cbind(sum(ts$black_teens / ts$n_black_teens * 1000),
+                  ts$white_teens / ts$n_white_teens * 1000), ncol = 2)
+
+# LBW RATE BY AGE
+teen <- nrow(al[which(al$BIRTH_WEIGHT_GRAMS < 2500 & al$MOTHER_AGE < 20),]) / nrow(al[which(al$MOTHER_AGE < 20),])
+adult <- nrow(al[which(al$BIRTH_WEIGHT_GRAMS < 2500 & al$MOTHER_AGE > 20),]) / nrow(al[which(al$MOTHER_AGE > 20),])
+black_teen <- nrow(al[which(al$BIRTH_WEIGHT_GRAMS < 2500 & al$MOTHER_AGE < 20 & al$MOTHER_RACE_BLACK == "Y"),]) / 
+  nrow(al[which(al$MOTHER_AGE < 20 & al$MOTHER_RACE_BLACK == "Y"),])
+white_teen <- nrow(al[which(al$BIRTH_WEIGHT_GRAMS < 2500 & al$MOTHER_AGE < 20 & al$MOTHER_RACE_WHITE == "Y"),]) / 
+  nrow(al[which(al$MOTHER_AGE < 20 & al$MOTHER_RACE_WHITE == "Y"),])
+black_adult <- nrow(al[which(al$BIRTH_WEIGHT_GRAMS < 2500 & al$MOTHER_AGE > 20 & al$MOTHER_RACE_BLACK == "Y"),]) / 
+  nrow(al[which(al$MOTHER_AGE > 20 & al$MOTHER_RACE_BLACK == "Y"),])
+white_adult <- nrow(al[which(al$BIRTH_WEIGHT_GRAMS < 2500 & al$MOTHER_AGE > 20 & al$MOTHER_RACE_WHITE == "Y"),]) / 
+  nrow(al[which(al$MOTHER_AGE > 20 & al$MOTHER_RACE_WHITE == "Y"),])
+
+
+
+bp <- barplot(c(teen, adult)* 100,
+              col = adjustcolor(c("darkred", "darkgrey"), alpha.f = 0.6),
+              names.arg = c("Teen", "Adult (20+)"))
+
+text(x = bp[,1],
+     y = c(teen, adult)*100,
+     pos = 1,
+     labels = paste0(round(c(teen, adult)*100, digits = 2), "%"))
+
+bp <- barplot(c(black_teen, white_teen, adult)* 100,
+              col = adjustcolor(c("darkred", "darkgrey", "darkblue"), alpha.f = 0.6),
+              names.arg = c("Black teen", "White teen", "Adult"))
+
+text(x = bp[,1],
+     y = c(black_teen, white_teen, adult)* 100,
+     pos = 1,
+     labels = paste0(round(c(black_teen, white_teen, adult)* 100, digits = 2), "%"))
+
+
+
+
+x <- ab %>%
+  group_by(EVENT_YEAR) %>%
+  filter(MOTHER_RES_COUNTY == "ALACHUA") %>%
+  summarise(count = n())
+
+y <- ab %>%
+  group_by(EVENT_YEAR) %>%
+  filter(MOTHER_RES_COUNTY == "ALACHUA",
+         MOTHER_AGE < 20) %>%
+  summarise(teen = n())
+
+u <- ab %>%
+  group_by(EVENT_YEAR) %>%
+  filter(MOTHER_RES_COUNTY == "ALACHUA",
+         BIRTH_WEIGHT_GRAMS < 2500) %>%
+  summarise(lbw = n())
+
+
+z <- merge(x,y, by = "EVENT_YEAR", all.x = T, all.y = F)
+z <- merge(z,u, by = "EVENT_YEAR", all.x = T, all.y = F)
+
+head(z)
+plot(z$EVENT_YEAR, z$lbw / z$count * 100, type = "l")
