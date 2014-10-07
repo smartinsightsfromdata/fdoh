@@ -444,22 +444,26 @@ BarFun(comb[,"Insurance.Carrier"],
        err.cex = 0.4,
        legend.title = "Employer size")
 
-#   var <- comb[,"Insurance.Carrier"]
-#   by_var = comb[,5]
-#   ref <- NULL
-#   recode_var <- NULL
-#   cex.names = 1
-#   las = 1
-#   percent = TRUE
-#   border = "black"
-#   rain = TRUE
-#   legend = TRUE
-
-# Best example:
-barplot(100*prop.table(table(by_var, var),2), las = 3, cex.names = 0.7, beside = T,
-        legend = T, col = c("blue", "darkgreen"))
+BarFun(comb[,5],
+       comb[,"Insurance.Carrier"],
+       ref = NULL,
+       recode_var = NULL,
+       cex.names = 0.6,
+       las = 3,
+       percent = TRUE,
+       border = "black",
+       #rain = TRUE,
+       legend = TRUE,
+       err.cex = 0.4,
+       legend.title = "Employer size")
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+par(mfrow=c(1,1))
+
+
+
+
+
 
 #1 . Size of employer and does employer provide health insurance
 BarFun(comb[,5], by_var = comb[,8], legend = TRUE, rain = TRUE)
