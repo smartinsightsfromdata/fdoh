@@ -15,6 +15,110 @@ if ( Sys.info()["sysname"] == "Linux" ){
 mywd <- getwd()
 
 #################
+
+# Read in bac STD's among 15-19 year-olds
+bac <- read.csv("Documents/fdoh/public/std/teen_std/bac_std_1519.csv")
+
+plot(bac$year, bac$alachua_rate, 
+     col = adjustcolor("darkred", alpha.f = 0.6),
+     type = "l",
+     lwd = 2,
+     ylim = c(0,3500),
+     xlab = "Year",
+     ylab = "Rate per 100,000")
+points(bac$year, bac$alachua_rate, 
+       pch = 1,
+       col = adjustcolor("darkred", alpha.f = 0.6))
+
+lines(bac$year, bac$florida_rate, 
+     col = adjustcolor("darkblue", alpha.f = 0.6),
+     lwd = 2)
+points(bac$year, bac$florida_rate, 
+       pch = 1,
+       col = adjustcolor("darkblue", alpha.f = 0.6))
+   
+abline(h = seq(0,5000, 500),
+       col = adjustcolor("black", alpha.f = 0.2))
+abline(v = seq(1990, 2020, 5),
+       col = adjustcolor("black", alpha.f = 0.2))
+
+legend(x = "bottomright",
+       lwd = 2,
+       pch = 1,
+       col = adjustcolor(c("darkred", "darkblue"), alpha.f = 0.6),
+       legend = c("Alachua", "Florida"))
+##################
+
+# Read in birth rate by country
+country <- read.csv("Documents/fdoh/public/std/teen_std/birth_rate_by_country.csv",
+                    skip = 1)
+
+
+# Make names more legible
+country$country <- gsub(" ", "\n", country$country)
+
+# Barplot
+country <- country[order(country$birth_rate),]
+barplot(country$birth_rate)
+
+BarFun <- function(number){
+  x <- country$birth_rate
+  x[(length(x)-number):length(x)] <- NA
+  barplot(x, ylim = c(0,60),
+          names.arg = country$country,
+          las = 3, 
+          cex.names = 0.7,
+          col = "grey")
+}
+for (i in 0:nrow(country)){
+  BarFun(i)
+}
+barplot(country$birth_rate,
+        ylim = c(0,60),
+        names.arg = country$country,
+        las = 3,
+        cex.names = 0.7,
+        col = c(rep("grey", 22), "red"))
+
+
+
+
+plot(country$birth_rate, country$abortion_rate, pch = 16,
+     xlab = "Teen birth rate", ylab = "Teen abortion rate",
+     col = adjustcolor("black", alpha.f = 0.6),
+     cex = 2)
+text(country$birth_rate, country$abortion_rate,
+     labels = country$country,
+     cex = 0.6)
+
+# #ADD LOESS LINE
+# lox <- country$birth_rate
+# loy <- country$abortion_rate
+# lw1 <- loess(loy ~ lox, span=1)
+# j <- order(lox)
+# lines(lox[j],lw1$fitted[j],col=adjustcolor("red", alpha.f = 0.4),
+#       lty=1,
+#       lwd = 3)
+
+# Add regression line
+x <- country$birth_rate
+y <- country$abortion_rate
+fit <- lm(y~x)
+abline(fit, col=adjustcolor("red", alpha.f = 0.4),
+       lty=1,
+       lwd = 3)
+
+
+
+
+
+
+
+
+
+#################
+
+#################
 ## Read in STD data (not stored in this directory)
 std <- read.csv("Desktop/std_private/alachua_2009-2014.csv")
 
