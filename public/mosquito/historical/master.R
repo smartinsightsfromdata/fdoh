@@ -1146,7 +1146,7 @@ legend(x="topleft",
 ############
 # SAVE IMAGE FOR REPORTS
 ############
-save.image("C:/Users/BrewJR/Documents/fdoh/public/mosquito/reports/2014-09-23/master.RData")
+save.image("C:/Users/BrewJR/Documents/fdoh/public/mosquito/reports/2014-10-14/master.RData")
 
 #SHOW FORECAST
 
@@ -1157,6 +1157,13 @@ cbind(as.character(master$date[which(is.na(master$predicted) == FALSE)]),
       master$upr[which(is.na(master$predicted) == FALSE)],
       master$rain5.11[which(is.na(master$predicted) == FALSE)])
 
+x <- data.frame("date" = master$date[which(is.na(master$predicted) == FALSE)], 
+                "totPer" = master$totPer[which(is.na(master$predicted) == FALSE)],
+                "predicted" = master$predicted[which(is.na(master$predicted) == FALSE)], 
+                "lwr" = master$lwr[which(is.na(master$predicted) == FALSE)], 
+                "upr" = master$upr[which(is.na(master$predicted) == FALSE)],
+                "rain5.11" = master$rain5.11[which(is.na(master$predicted) == FALSE)])
+x
 
 # library(car)
 # best.boot <- Boot(best, R=1999)
