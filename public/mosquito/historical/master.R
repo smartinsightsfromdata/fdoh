@@ -186,11 +186,11 @@ for (i in colnames(vec[which(grepl("code|name", colnames(vec))==FALSE)])){
 #POPULATE ts WITH TOTAL NUMBER OF EACH DISEASE TYPE
 for (i in ts$date){
   for (j in rev(colnames(ts))[1:7]){
-      ts[which(ts$date == i), j] <-
-        sum(raw.dat[which(raw.dat$date == i &
-                            raw.dat[,j] == TRUE),
-                    colnames(raw.dat[which(grepl("site", colnames(raw.dat)))])],
-                    na.rm=TRUE)  
+    ts[which(ts$date == i), j] <-
+      sum(raw.dat[which(raw.dat$date == i &
+                          raw.dat[,j] == TRUE),
+                  colnames(raw.dat[which(grepl("site", colnames(raw.dat)))])],
+          na.rm=TRUE)  
   }
 }
 
@@ -253,7 +253,7 @@ ts$col <- NA
 for (i in 1: length(unique(sort(ts$year)))){
   ts$col[which(ts$year == unique(sort(ts$year))[i])] <-
     yearcols[i]
-    
+  
 }
 
 
@@ -296,9 +296,9 @@ rt$date <- as.Date(rt$date, format="%Y-%m-%d")
 library(weatherData)
 #getWeatherForDate("GNV", "2014-04-14")
 newTemp <- getSummarizedWeather("GNV", start_date = max(rt$date) + 1, 
-                     end_date = Sys.Date() - 1,
-                     opt_custom_columns = TRUE,
-                     custom_columns = c(2,4,20))
+                                end_date = Sys.Date() - 1,
+                                opt_custom_columns = TRUE,
+                                custom_columns = c(2,4,20))
 
 ############
 #CLEAN UP newTemp A BIT SO AS TO MERGE WITH RT
@@ -337,7 +337,7 @@ for (j in colnames(rt)[grepl("rain", colnames(rt))][-1]){
   for (i in rowsToAdd){
     rt[i,j] <-
       sum(rt$rain[which(rt$date <= rt$date[i-min(as.numeric(unlist(strsplit(gsub("rain", "", j), ".", fixed=TRUE))))] &
-                           rt$date >= rt$date[i-max(as.numeric(unlist(strsplit(gsub("rain", "", j), ".", fixed=TRUE))))])], na.rm=TRUE)
+                          rt$date >= rt$date[i-max(as.numeric(unlist(strsplit(gsub("rain", "", j), ".", fixed=TRUE))))])], na.rm=TRUE)
   }
 }
 
@@ -348,7 +348,7 @@ for (j in colnames(rt)[grepl("minTemp", colnames(rt))][-1]){
   for (i in rowsToAdd){
     rt[i,j] <-
       min(rt$minTemp[which(rt$date <= rt$date[i-min(as.numeric(unlist(strsplit(gsub("minTemp", "", j), ".", fixed=TRUE))))] &
-                              rt$date >= rt$date[i-max(as.numeric(unlist(strsplit(gsub("minTemp", "", j), ".", fixed=TRUE))))])], na.rm=TRUE)
+                             rt$date >= rt$date[i-max(as.numeric(unlist(strsplit(gsub("minTemp", "", j), ".", fixed=TRUE))))])], na.rm=TRUE)
   }
 }
 
@@ -533,13 +533,13 @@ master$minTemp5.10[which(!is.finite(master$minTemp5.10))] <- NA
 ##############
 train <- master[which(master$date < "2014-01-01" ),
                 grepl("rain|Temp|totPer", colnames(master)) &
-                 # grepl("5|totPer", colnames(master)) &
-                #  grepl("1|totPer", colnames(master)) &
+                  # grepl("5|totPer", colnames(master)) &
+                  #  grepl("1|totPer", colnames(master)) &
                   !grepl("mostRecent", colnames(master))]
 test <- master[which(master$date >= "2014-01-01"),
                grepl("rain|Temp|totPer", colnames(master)) &
-                # grepl("5|totPer", colnames(master)) &
-                # grepl("1|totPer", colnames(master)) &
+                 # grepl("5|totPer", colnames(master)) &
+                 # grepl("1|totPer", colnames(master)) &
                  !grepl("mostRecent", colnames(master))]
 
 
@@ -627,7 +627,7 @@ futureDates$rain15.29 <- NA
 for (i in 1:nrow(futureDates)){
   futureDates$rain15.29[i] <-
     sum(rt$rain[which(rt$date >= futureDates$date[i] - 40 &
-                            rt$date <= futureDates$date[i] - 20)],
+                        rt$date <= futureDates$date[i] - 20)],
         na.rm=TRUE)
 }
 
@@ -650,9 +650,9 @@ master$predicted <- predict.lm(object = best,
                                interval="none",
                                level=0.7)
 master$lwr <- predict.lm(object = best,
-                          newdata = master,
-                          interval="prediction",
-                          level=0.7)[, "lwr"]
+                         newdata = master,
+                         interval="prediction",
+                         level=0.7)[, "lwr"]
 master$upr <- predict.lm(object = best,
                          newdata = master,
                          interval="prediction",
@@ -662,9 +662,9 @@ master$upr <- predict.lm(object = best,
 # PREDICT FOR NEXT 20 DAYS
 ##########################################
 myPredictions <- cbind(futureDates, predict(best, 
-                           futureDates, 
-                           interval="prediction",
-                           level=0.7))
+                                            futureDates, 
+                                            interval="prediction",
+                                            level=0.7))
 myPredictions$predicted <- myPredictions$fit
 
 ############################################
@@ -867,13 +867,13 @@ par(mfrow=c(1,1))
 #SIMPLE 
 
 totPerSiteRecent <- as.numeric(unlist(master[which(master$date == 
-                                               recent),
-                                       colnames(master[which(grepl("site", colnames(master)) & 
-                                                               nchar(colnames(master)) < 7)])]))
+                                                     recent),
+                                             colnames(master[which(grepl("site", colnames(master)) & 
+                                                                     nchar(colnames(master)) < 7)])]))
 
 totPerSiteNormal <- apply(master[which(master$date < recent),
-                                             colnames(master[which(grepl("site", colnames(master)) & 
-                                                                     nchar(colnames(master)) < 7)])],
+                                 colnames(master[which(grepl("site", colnames(master)) & 
+                                                         nchar(colnames(master)) < 7)])],
                           2,
                           sum)
 
@@ -881,7 +881,7 @@ totPerSiteNormal <- apply(master[which(master$date < recent),
 
 #WATERCOLOR MAP
 wcMap <- openmap(c(30, -82.65), c(29.4,-82.0),
-                         type="stamen-watercolor")
+                 type="stamen-watercolor")
 wcMap <- openproj(wcMap, projection = "+proj=longlat")
 plot(wcMap, raster=TRUE)
 #plot(wcMap)
@@ -1024,7 +1024,7 @@ bootRecent <- rnorm(1000,
                       sqrt(nrow(master[which(is.na(master$totPer) == FALSE),])))
 #Old way
 #bootPred <- ((master$rain15.29[which(master$date == "2014-06-16")]^(2)*bootRain) +
- #              (master$mostRecent[which(master$date == "2014-06-16")]*bootRecent))^(1/3)
+#              (master$mostRecent[which(master$date == "2014-06-16")]*bootRecent))^(1/3)
 
 #Experimental
 bootPred <- ((mean(master$rain15.29[which(master$date > recent)], na.rm=T)^(2)*bootRain) +
@@ -1042,14 +1042,14 @@ alexCols <- colorRampPalette(c(col1, col2))(nCols)
 #PLOT
 myhist <- 
   hist(master$totPer[which(master$date < "2014-01-01")]^(1/3), 
-     breaks=breakNum,
-     xlab="Mosquitoes per trap (2008-13)",
-     main=NA,
-     col=histCols,
-     border=NA,
-     xaxt="n",
-     freq=FALSE,
-     ylim=c(0,.4))
+       breaks=breakNum,
+       xlab="Mosquitoes per trap (2008-13)",
+       main=NA,
+       col=histCols,
+       border=NA,
+       xaxt="n",
+       freq=FALSE,
+       ylim=c(0,.4))
 axis(side=1,
      at=c(0, 100, 400, 1000, 1600)^(1/3),
      labels=c(0, 100, 400, 1000, 1600))
@@ -1110,9 +1110,9 @@ DiseaseLinesFun <- function(color, disease){
   lines(temp$date, temp[,disease]^(1/3),
         col=adjustcolor(color, alpha.f=0.3),
         lwd=3)
-#   points(master$date, master[,disease]^(1/3),
-#          col=adjustcolor(color, alpha.f=0.5),
-#          pch=16)
+  #   points(master$date, master[,disease]^(1/3),
+  #          col=adjustcolor(color, alpha.f=0.5),
+  #          pch=16)
 }
 par(mar=c(5,4,2,1))
 par(oma=c(1,1,1,1))
@@ -1143,6 +1143,31 @@ legend(x="topleft",
                 "Chikungunya",
                 "Yellow Fever"),
        bty="n")
+
+############
+# SURFACE MAPS (SPATIAL INTERPOLATION)
+############
+library(gstat)
+library(geoR)
+library(rgdal)
+library(scatterplot3d)
+library(RColorBrewer)
+
+# Read in Alachua Countyboundary
+setwd("C:/Users/BrewJR/Documents/fdoh/public/mosquito")
+boundary <- readOGR("Alachua_Boundary", "Alachua_Boundary")
+
+# Source the code for surface maps
+source("SurfaceFun.R")
+par(mfrow=c(1,1))
+suppressWarnings(SurfaceFun("wnv"))
+suppressWarnings(SurfaceFun("dengue"))
+suppressWarnings(SurfaceFun("malaria"))
+suppressWarnings(SurfaceFun("slev"))
+suppressWarnings(SurfaceFun("eeev"))
+suppressWarnings(SurfaceFun("yellow"))
+
+
 ############
 # SAVE IMAGE FOR REPORTS
 ############
@@ -1227,7 +1252,7 @@ a$r.squared <- NA
 a$sls <- NA
 
 for (i in a$k){
-    z <- 
+  z <- 
     knn(train = myTrain,
         test = myTest,
         cl = myTrain$totPerFac,
@@ -1241,7 +1266,7 @@ for (i in a$k){
   
   a$sls[which(a$k == i)] <- 
     sum(lm(myTest$totPer ~ x)$residuals^2)
-
+  
   #lines(1:nrow(myTest), x, col="darkgreen") #predicted by knn
   #Sys.sleep(0.5)
 }

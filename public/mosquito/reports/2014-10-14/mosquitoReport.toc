@@ -6,5 +6,6 @@
 \contentsline {subsection}{Disease Vectors}{3}
 \contentsline {section}{Forecast}{4}
 \contentsline {section}{Vectors of Disease by Location}{5}
-\contentsline {section}{Mosquito Types}{6}
-\contentsline {section}{Details of Predictive Model}{8}
+\contentsline {section}{Spatial interpolation maps}{6}
+\contentsline {section}{Mosquito Types}{7}
+\contentsline {section}{Details of Predictive Model}{9}

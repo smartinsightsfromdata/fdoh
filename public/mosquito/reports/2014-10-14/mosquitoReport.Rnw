@@ -64,6 +64,11 @@ library(maps)
 library(RColorBrewer)
 library(xtable)
 library(splines)
+library(gstat)
+library(geoR)
+library(rgdal)
+library(scatterplot3d)
+
 
 ####################
 # LOAD MOST RECENT DATA
@@ -95,7 +100,7 @@ load("C:/Users/BrewJR/Documents/fdoh/public/mosquito/reports/2014-10-14/master.R
 \subsection*{Most Recent Collection}
 %------------------------------------------
 
-As predicted, mosquito numbers remained low over recent weeks, ranging from 105 per trap on September 23rd to 131 per trap at the most recent collection date (\Sexpr{format(recent, format="%B %d, %Y")}).  
+As predicted, mosquito numbers remained low over recent weeks, ranging from 105 to 131 per trap through the most recent collection (\Sexpr{format(recent, format="%B %d, %Y")}).  
 
 \vfill
 \columnbreak
@@ -517,6 +522,38 @@ DiseaseMapFun("eeev")
 DiseaseMapFun("dengue")
 DiseaseMapFun("malaria")
 DiseaseMapFun("chik")
+@
+
+
+%------------------------------------------
+\section*{Spatial interpolation maps}
+\addcontentsline{toc}{section}{Spatial interpolation maps}
+%------------------------------------------
+\hrulefill
+\vspace{5mm}
+
+Mosquito species cabale of carrying WNV and SLEV were most prevalent in recent trap collections.
+
+<<fig=TRUE, height=7, results = hide>>=
+
+
+#PLOT DISEASE MAPS
+par(mfrow=c(3,2))
+par(mar=c(3,2,3,1))
+par(oma=c(1,1,1,1))
+SurfaceFun("wnv")
+title(main = "WNV")
+SurfaceFun("slev")
+title(main = "SLEV")
+SurfaceFun("eeev")
+title(main = "EEEV")
+SurfaceFun("dengue")
+title(main = "Dengue")
+SurfaceFun("malaria")
+title(main = "Malaria")
+SurfaceFun("chik")
+title(main = "Chkungunya")
+
 @
 
 
