@@ -108,8 +108,57 @@ setwd(private)
 load("births_2000-2014.RData")
 
 ###
-# EXPLORE RELATIONSHIP BETWEEN AGE AND BIRTH WEIGHT
+# LOAD FLORIDA ZIP CODE SHAPEFILE
 ###
+setwd(public)
+library(rgdal)
+fl <- readOGR("florida_zip", "zip")
+
+###
+# READ IN INCOME AND STD RATES
+###
+# read in the std rate data
+std <- read.csv("std.csv", stringsAsFactors = FALSE)
+
+# compare to see if names are perfect matches
+fl$NAME <- toupper(fl$NAME)
+table(fl@data$NAME == std$NAME) # they're not all correct
+
+# get the closest match for each county
+
+fl$name <- NA # create empty vector where we'll put our names
+std$name <- std$NAME # we'll use lower cases for the matches
+for (i in 1:nrow(fl)){
+  # see how close (in character changes) each name in fl is to those in STD
+  m <- adist(fl$NAME[i],
+             std$NAME)
+  # get the one with the least differences
+  ind <- which.min(m)
+  # get the name from std
+  best <- std$NAME[ind]
+  # assign to fl
+  fl$name[i] <- best
+}
+
+# Merge the two datasets together
+fl@data <- merge(x = fl@data,
+                 y = std,
+                 by = "name",
+                 all.x = TRUE,
+                 all.y = FALSE)
+
+
+###
+# EXPLORE A BIT
+###
+library(dplyr)
+x <- births %>%
+  group_by(age) %>%
+  summarise(n = median(weight, na.rm = TRUE))
+x <- x[which(x$age > 12 & x$age <=50),]
+plot(x$age, x$n)
+boxplot(births$weight ~ births$age)
+
 library(hexbin)
 HexFun <- function(x, y, xlab = NA, ylab = NA, main = NA){
   bin<-hexbin(x, y, xbins=50) 
@@ -118,13 +167,8 @@ HexFun <- function(x, y, xlab = NA, ylab = NA, main = NA){
        ylab = ylab)
 }
 HexFun(x = births$age,
-       y = births$weight)
+       y = births$weight,
+       xlab = "Mother's age",
+       ylab = "Birth weight (grams)",
+       main = "Age and weight")
 
-###
-# QUICK LOGISTIC REGRESSION
-###
-mylogit <- glm(weight < 2500 ~
-                 black,
-               data = births,
-               family = binomial("logit"))
-exp(coef(mylogit))
