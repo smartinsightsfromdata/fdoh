@@ -571,3 +571,137 @@ HexFun(x = births$age,
        ylab = "Birth weight (grams)",
        main = "Age and weight")
 
+
+# Histogram of LBW
+hist(births$weight / 453.6,
+     breaks = 30,
+     xlab = "Weight (pounds)",
+     freq = FALSE,
+     las = 1,
+     main = "Distribution of weight at birth",
+     col = "grey",
+     border = "darkgrey")
+abline(v = 2500 / 453.6,
+       col = adjustcolor("darkred", alpha.f = 0.6),
+       lwd = 2)
+abline(v = 1500 / 453.6,
+       col = adjustcolor("purple", alpha.f = 0.6),
+       lwd = 2)
+legend("topright",
+       lty = 1,
+       lwd = 2,
+       col = adjustcolor(c("darkred", "purple"), alpha.f = 0.6),
+       legend = c("low birth weight", "very low birth weight"),
+       cex = 0.7,
+       bty= "n")
+
+hist(births$weight[which(births$white)] / 453.6,
+     breaks = 30,
+     xlab = "Weight (pounds)",
+     freq = FALSE,
+     las = 1,
+     main = "Distribution of weight at birth",
+     col = "grey",
+     border = "darkgrey")
+abline(v = 2500 / 453.6,
+       col = adjustcolor("darkred", alpha.f = 0.6),
+       lwd = 2)
+abline(v = 1500 / 453.6,
+       col = adjustcolor("purple", alpha.f = 0.6),
+       lwd = 2)
+legend("topright",
+       lty = 1,
+       lwd = 2,
+       col = adjustcolor(c("darkred", "purple"), alpha.f = 0.6),
+       legend = c("low birth weight", "very low birth weight"),
+       cex = 0.7,
+       bty= "n")
+
+x <- births[which(births$age > 12 &
+                    births$age <= 40),]
+x <- x %>%
+  group_by(age) %>%
+  summarise(weight = median(weight, na.rm = TRUE))
+
+plot(x$age, x$weight, type = "l",
+     xlab = "Age",
+     ylab = "Weight (grams)",
+     main = "Relationship between mother's age and birth weight",
+     lty = 1,
+     lwd = 2,
+     col = adjustcolor("black", alpha.f = 0.6),
+     las = 3,
+     ylim = c(3000, 3400))
+legend("topleft",
+       lty = 1,
+       col = adjustcolor(c(
+         "black",
+         "darkred",
+         "purple",
+         "darkgreen",
+         "darkorange"),
+         alpha.f = 0.6),
+       legend = c("All",
+                  "black",
+                  "white",
+                  "'high-risk' white",
+                  "'high-risk' black",
+                  "tobacco use during pregnancy"),
+       bty = "n",
+       border = NA,
+       cex = 0.8)
+
+
+x <- births[which(births$age > 12 &
+                    births$age <= 40 &
+                    births$black),]
+x <- x %>%
+  group_by(age) %>%
+  summarise(weight = median(weight, na.rm = TRUE))
+
+lines(x$age, x$weight, type = "l",
+      col = adjustcolor("darkred", alpha.f = 0.6))
+
+x <- births[which(births$age > 12 &
+                    births$age <= 40 &
+                    births$white),]
+x <- x %>%
+  group_by(age) %>%
+  summarise(weight = median(weight, na.rm = TRUE))
+
+lines(x$age, x$weight, type = "l",
+      col = adjustcolor("purple", alpha.f = 0.6))
+
+x <- births[which(births$age > 12 &
+                    births$age <= 40 &
+                    births$cat == 4),]
+x <- x %>%
+  group_by(age) %>%
+  summarise(weight = median(weight, na.rm = TRUE))
+
+lines(x$age, x$weight, type = "l",
+      col = adjustcolor("darkgreen", alpha.f = 0.6))
+
+x <- births[which(births$age > 12 &
+                    births$age <= 40 &
+                    births$cat == 8),]
+x <- x %>%
+  group_by(age) %>%
+  summarise(weight = median(weight, na.rm = TRUE))
+
+lines(x$age, x$weight, type = "l",
+      col = adjustcolor("darkorange", alpha.f = 0.6))
+
+
+
+x <- births[which(births$age > 12 &
+                    births$age <= 40 &
+                    births$tobacco),]
+x <- x %>%
+  group_by(age) %>%
+  summarise(weight = median(weight, na.rm = TRUE))
+
+lines(x$age, x$weight, type = "l",
+      col = adjustcolor("grey", alpha.f = 0.6))
+
+
